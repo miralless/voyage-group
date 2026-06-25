@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoyageGroup - Mis Grupos</title>
+    <link rel="stylesheet" href="styles/styles.css">
+</head>
+<body class="app-body">
+
+    <div id="app-loader" class="loader-overlay">
+        <div class="loader-spinner"></div>
+        <p>Cargando...</p>
+    </div>
+
+    <nav class="app-nav">
+        <div class="logo"><span style="color: white;">Voyage</span>Group</div>
+        <div class="user-info">
+            <span id="nav-username">@usuario</span>
+        </div>
+    </nav>
+
+    <main class="app-main">
+        <header class="main-header">
+            <h2>Mis Grupos de Viaje</h2>
+            <div id="groups-container"></div>
+            <button id="btn-create-group" class="btn-primary">Crear o Unirse</button>
+        </header>
+    </main>
+
+    <footer class="app-footer">
+        <a href="app.html" class="footer-link active">
+            <svg class="footer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+        </a>
+        <a href="perfil.html" class="footer-link">
+            <img id="footer-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Perfil" class="footer-avatar-img">
+        </a>
+    </footer>
+
+    <div id="group-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>¿Qué quieres hacer?</h3>
+            <p class="modal-subtitle">Crea un nuevo grupo de viaje o únete a uno existente usando su código.</p>
+
+            <div class="modal-actions">
+                <div class="modal-section">
+                    <h4>Crear un nuevo grupo</h4>
+                    <input type="text" id="new-group-name" placeholder="Ej: Viaje a París 2026">
+                    <button id="btn-submit-create" class="btn-primary">Crear Grupo</button>
+                </div>
+                
+                <div class="modal-section">
+                    <h4>Unirse a un grupo</h4>
+                    <input type="text" id="join-group-code" placeholder="Ej: AX839L" maxlength="6" style="text-transform: uppercase;">
+                    <button id="btn-submit-join" class="btn-primary btn-secondary">Unirse</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

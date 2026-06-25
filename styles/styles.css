@@ -1,0 +1,1105 @@
+/* css/styles.css */
+
+/* ==========================================================================
+   VARIABLES DE COLOR (Paleta Azul Oscuro Premium)
+   ========================================================================== */
+:root {
+    --bg-gradient-start: #0f172a; /* Azul noche muy oscuro (Slate 900) */
+    --bg-gradient-end: #1e3a8a;   /* Azul marino profundo (Blue 900) */
+    --primary-color: #2563eb;     /* Azul eléctrico para botones y enlaces (Blue 600) */
+    --primary-hover: #1d4ed8;     /* Azul de interacción (Blue 700) */
+    --primary-glow: rgba(37, 99, 235, 0.2);
+    
+    --text-main: #1e293b;         /* Gris casi negro para títulos */
+    --text-muted: #64748b;        /* Gris suave para subtítulos */
+    --border-color: #cbd5e1;      /* Borde de los inputs */
+    --card-bg: #ffffff;           /* Fondo blanco limpio para la tarjeta */
+}
+
+/* ==========================================================================
+   ESTILOS GENERALES
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+    margin: 0;
+    padding: 0;
+    min-height: 100vh; /* Permite que el body crezca si hay mucho contenido */
+    display: block;    /* Flujo normal de arriba a abajo */
+    overflow-y: auto;  /* ¡PERMITE EL SCROLL GENERAL EN MÓVILES! */
+}
+
+body:has(.auth-card) {
+    height: 100vh; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    overflow: hidden; /* Congela el scroll SOLO en la pantalla de login */
+}
+
+.auth-card {
+    background: var(--card-bg);
+    padding: 2.2rem 2rem;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    max-height: 95vh; 
+    overflow-y: auto; 
+}
+
+h2 {
+    color: var(--text-main);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+}
+
+/* ==========================================================================
+   FORMULARIOS E INPUTS
+   ========================================================================== */
+.input-group {
+    text-align: left;
+    margin-bottom: 1.25rem;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.85rem;
+    border: 2px solid var(--border-color); /* Un borde de 2px da más sensación de app */
+    border-radius: 10px;
+    font-size: 1rem;
+    color: var(--text-main);
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+/* Efecto focus iluminado moderno */
+.input-group input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px var(--primary-glow);
+}
+
+/* ==========================================================================
+   BOTONES Y ELEMENTOS DE ACCIÓN
+   ========================================================================== */
+button {
+    width: 100%;
+    padding: 0.9rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 0.75rem;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+button:active {
+    transform: translateY(1px); /* Efecto de hundimiento real al pulsar */
+}
+
+.auth-toggle {
+    margin-top: 1.75rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.auth-toggle a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 700;
+    transition: color 0.2s ease;
+}
+
+.input-group-row {
+    display: flex;
+    gap: 1rem;
+}
+.input-group-row .input-group {
+    flex: 1;
+}
+
+.avatar-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.avatar-preview {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    border: 3px solid var(--primary-color);
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+    background: #f1f5f9;
+}
+
+.avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-label {
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    font-weight: 700;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+/* ==========================================================================
+   ADAPTACIÓN PARA MÓVILES
+   ========================================================================== */
+@media (max-width: 480px) {
+    body {
+        padding: 0.75rem;
+    }
+
+    .auth-card {
+        padding: 2rem 1.5rem;
+        border-radius: 15px;
+        max-width: 90%;
+    }
+
+    h2 {
+        font-size: 1.75rem;
+    }
+
+    .input-group input {
+        padding: 0.95rem;
+        font-size: 15px;
+    }
+
+    button {
+        padding: 0.75rem;
+        font-size: 1rem;
+        margin-top: 1rem;
+    }
+
+    .auth-toggle {
+        margin-top: 0.15rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9; /* Línea divisoria fina en móviles */
+    }
+
+    #login-form input {
+        padding: 10px;
+        font-size: 15px;
+    }
+
+    .input-group-row {
+        flex-direction: row;
+        gap: 0.75rem;
+    }
+}
+
+/* ==========================================================================
+   ESTILOS PREMIUM MODO OSCURO PARA APP.HTML
+   ========================================================================== */
+
+.app-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    height: 100vh;
+    /* 1. FONDO PRINCIPAL: Un gris azulado ultra oscuro, muy elegante */
+    background-color: #0b0f19; 
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+}
+
+/* Nav Superior */
+.app-nav {
+    width: 100%;
+    height: 60px;
+    background-color: #111827; 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1.5rem;
+    color: white;
+    border-bottom: 1px solid #1f2937; /* Línea divisoria muy fina */
+}
+
+.app-nav .logo {
+    font-weight: bold;
+    font-size: 1.3rem;
+    letter-spacing: 0.5px;
+    color: #3b82f6; 
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.nav-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #3b82f6;
+}
+
+.nav-username {
+    color: #f3f4f6;
+    font-weight: 500;
+}
+
+/* Contenedor Principal */
+.app-main {
+    flex: 1;
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 80px 1.5rem;
+    overflow-y: auto;
+}
+
+.main-header {
+    display: flex;
+    flex-direction: column; /* Forzamos a que se apilen uno debajo del otro */
+    align-items: flex-start; /* Alineados a la izquierda */
+    gap: 1rem; /* Espacio perfecto de separación entre el título y el botón */
+    margin-bottom: 2.5rem; /* Separación respecto a la rejilla de grupos */
+}
+
+/* Forzamos a que el título no tenga márgenes raros que lo desvíen */
+.main-header h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+#btn-create-group {
+    padding: 0.75rem 1.5rem;
+    background-color: #3b82f6; /* El azul eléctrico a juego con los iconos */
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+/* Rejilla de Grupos */
+#groups-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* Espacio de separación entre filas */
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+/* Rediseño de la tarjeta como una fila elegante */
+.group-card {
+    background: #111827; 
+    padding: 1.2rem 1.5rem;
+    border-radius: 12px;
+    border: 1px solid #1f2937;
+    text-align: left;
+    cursor: pointer;
+    
+    /* Clave: Alineamos el contenido de izquierda a derecha en la misma línea */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.group-info-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.group-card h3 {
+    color: #3b82f6;
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.group-card p {
+    color: #9ca3af; 
+    font-size: 0.8rem;
+    margin: 0;
+    font-weight: 550;
+}
+
+/* Contenedor derecho para el código de invitación */
+.group-info-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.group-code-badge {
+    background-color: rgba(59, 130, 246, 0.1); /* Fondo azul translúcido */
+    color: #3b82f6;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    text-align: center;
+}
+
+.loading-text {
+    color: #9ca3af;
+    grid-column: 1 / -1;
+    text-align: center;
+    margin-bottom: 0px;
+}
+
+#nav-username {
+    font-style: italic;
+}
+
+/* Footer de Navegación */
+.app-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+    /* 4. FOOTER: A juego con el nav, cierra el marco de la app */
+    background: #111827; 
+    border-top: 1px solid #1f2937;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 10;
+}
+
+.footer-avatar-img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%; /* La hace completamente redonda */
+    object-fit: cover;  /* Evita que la foto se deforme si no es perfectamente cuadrada */
+    border: 1.5px solid #6b7280; /* Borde gris por defecto que combina con el texto */
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.footer-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #6b7280; /* Iconos apagados por defecto */
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: color 0.2s ease;
+    gap: 4px;
+}
+
+.footer-icon {
+    width: 24px;
+    height: 24px;
+    stroke: #6b7280;
+    transition: stroke 0.2s ease, transform 0.2s ease;
+}
+
+/* Cuando la pestaña está activa o pasas el cursor */
+.footer-link.active .footer-avatar-img {
+    border-color: #3b82f6; /* Cambia el borde a azul eléctrico */
+    transform: scale(1.05); /* Efecto de aumento sutil */
+}
+
+.footer-link.active .footer-icon {
+    stroke: #3b82f6;
+    transform: scale(1.05);
+}
+
+@media (max-width: 480px) {
+    #btn-create-group {
+        width: 100%; /* ¡En el móvil el botón ocupa todo el ancho, estilo app nativa! */
+        text-align: center;
+    }
+}
+
+/* ==========================================================================
+   VENTANA MODAL (CREAR / UNIRSE GRUPO)
+   ========================================================================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.6); /* Fondo oscurecido */
+    backdrop-filter: blur(4px); /* Efecto difuminado de fondo */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+/* Clase que añadiremos con JS para mostrar la modal */
+.modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background-color: #111827; 
+    border: 1px solid #1f2937;
+    width: 90%;
+    max-width: 600px;
+    padding: 2.5rem 1.5rem 2.5rem 1.5rem;
+    border-radius: 16px;
+    position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    box-sizing: border-box; /* Asegura que los paddings no deformen el ancho total */
+}
+
+.modal-content h3 {
+    color: white;
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+}
+
+.modal-subtitle {
+    color: #9ca3af;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 2rem;
+    align-items: stretch;
+}
+
+.modal-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.modal-section h4 {
+    color: white;
+    margin: 0;
+    font-size: 1.1rem;
+    text-align: left;
+}
+
+.modal-section input {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    color: white;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+}
+
+.modal-section input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.modal-divider {
+    display: flex;
+    align-items: center;
+    color: #4b5563;
+    font-weight: bold;
+}
+
+/* Botón secundario grisáceo para diferenciar acciones */
+.btn-primary.btn-secondary {
+    background-color: #4b5563;
+}
+
+/* Adaptación móvil para la modal */
+@media (max-width: 600px) {
+    .modal-actions {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    .modal-divider {
+        justify-content: center;
+        padding: 0.5rem 0;
+    }
+}
+
+/* ==========================================================================
+   ESTILOS PARA PERFIL.HTML
+   ========================================================================== */
+.profile-main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 1rem;
+}
+
+.profile-card {
+    background: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 450px;
+    padding: 1.5rem 1.5rem;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.profile-avatar-wrapper {
+    margin-bottom: 1.5rem;
+}
+
+#profile-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #3b82f6; /* Borde azul eléctrico destacando la foto */
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+    margin-bottom: -0.75rem;
+}
+
+.profile-card h2 {
+    color: #ffffff;
+    margin: 0 0 0.3rem 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.profile-username-text {
+    color: #3b82f6;
+    font-weight: 600;
+    margin: 0 0 1.5rem 0;
+    font-size: 1rem;
+    font-style: italic;
+}
+
+.profile-details {
+    background: #1f2937;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    text-align: left;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.detail-label {
+    color: #6b7280;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+}
+
+.detail-value {
+    color: #e5e7eb;
+    font-size: 0.95rem;
+    word-break: break-all; /* Evita que correos largos rompan la tarjeta */
+}
+
+/* Botón destructivo para cerrar sesión */
+.btn-logout {
+    width: 100%;
+    padding: 0.8rem;
+    background-color: #ef4444; /* Rojo vibrante */
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+/* ==========================================================================
+   PANTALLA DE CARGA GLOBAL (SPINNER LOADER)
+   ========================================================================== */
+.loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background-color: #0b0f19; /* El mismo fondo ultra oscuro de tu app */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1.2rem;
+    z-index: 9999; /* Se asegura de estar por encima del nav, footer y modales */
+    transition: opacity 0.4s ease, pointer-events 0.4s ease;
+}
+
+/* Rueda giratoria animada */
+.loader-spinner {
+    width: 45px;
+    height: 45px;
+    border: 4px solid #1f2937; /* Color de la pista del círculo */
+    border-top: 4px solid #3b82f6; /* El color azul eléctrico de tu app que girará */
+    border-radius: 50%;
+    animation: spin 1s linear infinite; /* Animación continua */
+}
+
+.loader-overlay p {
+    color: #9ca3af;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+/* Efecto para ocultar el loader de forma suave */
+.loader-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Definición del movimiento de rotación */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   NUEVO COMPONENTE: ESTADÍSTICAS DEL PERFIL
+   ========================================================================== */
+.profile-stats {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem; /* Separación con el bloque del correo */
+}
+
+.stat-box {
+    background: #1f2937; /* Gris un poco más claro para romper con el fondo de la tarjeta */
+    border: 1px solid #374151;
+    padding: 0.8rem 0.5rem;
+    border-radius: 12px;
+    flex: 1; /* Hace que las 3 cajas midan exactamente lo mismo distribuyendo el espacio */
+    text-align: center;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.stat-number {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #3b82f6;
+    margin-bottom: 0.2rem;
+    margin-top: 0.2rem;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.65rem;
+    color: #9ca3af;
+    text-transform: uppercase; /* Forzamos mayúsculas para un look más de "interfaz" */
+    letter-spacing: 0.5px;
+    font-weight: bold;
+}
+
+/* ==========================================================================
+   ACTUALIZACIÓN DE FOTO DE PERFIL EN VIVO
+   ========================================================================== */
+.avatar-editable-container {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+/* Capa oscura translúcida que aparece con el icono de la cámara */
+.camera-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4); /* Oscurece la foto un poco */
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0; /* Oculto por defecto */
+    transition: opacity 0.2s ease;
+}
+
+.camera-overlay svg {
+    width: 28px;
+    height: 28px;
+    color: #ffffff;
+}
+
+.custom-dialog {
+    position: fixed; /* Asegura el posicionamiento respecto a la pantalla */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* El truco mágico para el centrado perfecto */
+    margin: 0; /* Elimina el centrado extraño por defecto del navegador */
+    
+    background: #111827;
+    color: #f3f4f6;
+    border: 1px solid #374151;
+    border-radius: 16px;
+    padding: 1.5rem;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+/* ==========================================================================
+   ESTILOS EXCLUSIVOS PARA LA PANTALLA DEL GRUPO (grupo.html)
+   ========================================================================== */
+
+/* 1. Contenedor principal: Lo aislamos por completo del Nav y el Footer */
+main.group-layout {
+    display: block; /* Por defecto en móvil se comporta como un bloque clásico hacia abajo */
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* 2. Sección del mapa de logros */
+.map-achievements-container {
+    width: 100%;
+    height: 320px;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 16px;
+    overflow-y: auto;
+    margin-bottom: 1.5rem; /* Separación vertical en móvil */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    margin-top: 1.5rem;
+}
+
+#group-main-map {
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* Asegura que se quede por debajo de los modales <dialog> */
+}
+
+/* 3. Cabecera interna de la barra lateral (Título, participantes y código) */
+.group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #374151;
+    padding-bottom: 0rem;
+    margin-bottom: 1.5rem;
+}
+
+.group-header h2 {
+    font-size: 1.4rem;
+    color: #f3f4f6;
+    margin: 0;
+}
+
+.group-code-badge-large {
+    background: #3b82f6;
+    color: white;
+    padding: 0.4rem 0.85rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.trips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+/* Tarjetas de los viajes inyectadas por JS */
+.trip-card {
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Contenedor de dos columnas dentro de la tarjeta */
+.trip-card {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 1rem;
+    overflow: hidden; /* Evita que las fotos rotadas se salgan de la tarjeta */
+}
+
+.trip-card-info {
+    flex: 1;
+    text-align: left;
+}
+
+/* Contenedor de la pila de fotos */
+.trip-photos-stack {
+    position: relative;
+    width: 80px;
+    height: 70px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 0.5rem;
+}
+
+/* Estilo base para cada foto de la pila */
+.stack-img {
+    position: absolute;
+    width: 55px;
+    height: 55px;
+    object-fit: cover;
+    border: 2px solid #ffffff; /* Borde blanco tipo foto física / polaroid */
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    background-color: #2c3e50;
+    transition: transform 0.3s ease, z-index 0.3s ease;
+}
+
+/* Rotaciones específicas para simular el desorden sobre la mesa */
+.img-deg-0 {
+    transform: rotate(-10deg) translate(-5px, -2px);
+    z-index: 3;
+}
+
+.img-deg-1 {
+    transform: rotate(8deg) translate(4px, 3px);
+    z-index: 2;
+}
+
+.img-deg-2 {
+    transform: rotate(-22deg) translate(-2px, 5px);
+    z-index: 1;
+}
+
+/* Efecto hover: Cuando pasas el ratón por encima de la tarjeta, las fotos se alinean sutilmente */
+.trip-card:hover .stack-img {
+    transform: rotate(0deg) scale(1.05);
+}
+.trip-card:hover .img-deg-0 { transform: rotate(-4deg) scale(1.05); }
+.trip-card:hover .img-deg-1 { transform: rotate(4deg) scale(1.05); }
+
+/* Placeholder cuando no hay fotos subidas */
+.no-photos-placeholder {
+    width: 50px;
+    height: 50px;
+    background: #1f2937;
+    border: 1px dashed #374151;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #4b5563;
+}
+
+.no-photos-placeholder svg {
+    width: 22px;
+    height: 22px;
+}
+/* Botón "+ Nuevo Viaje" */
+.btn-add-trip {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 0.55rem 1.1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-add-trip:hover {
+    background: #059669;
+}
+
+/* 5. Estilos de Leaflet adaptados a tu tema oscuro */
+.leaflet-popup-content-wrapper {
+    background: #f3f4f6 !important;
+    color: #111827 !important;
+    border-radius: 8px !important;
+}
+.leaflet-popup-tip {
+    background: #f3f4f6 !important;
+}
+
+/* ==========================================================================
+   6. DISTRIBUCIÓN EN PANTALLAS GRANDES (Ordenador / Tablet)
+   ========================================================================== */
+/* ==========================================================================
+   6. DISTRIBUCIÓN EN PANTALLAS GRANDES (Ordenador / Tablet)
+   ========================================================================== */
+@media (min-width: 768px) {
+    .map-achievements-container {
+        flex: 1;
+        height: 100%; 
+        margin-bottom: 0;
+    }
+
+    .trips-grid {
+        grid-template-columns: 1fr; 
+        overflow-y: auto;
+        flex: 1;
+        padding-right: 0.25rem;
+    }
+
+    .group-header {
+        margin-top: 1rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    .trips-section h3 {
+        padding-left: 0.5rem;
+    }
+}
+
+/* ==========================================================================
+   7. COMPORTAMIENTO EXCLUSIVO PARA MÓVILES (¡Arreglado!)
+   ========================================================================== */
+@media (max-width: 767px) {
+    /* Forzamos transparencia radical en móviles para unificar el fondo degradado */
+    main.group-layout,
+    .sidebar-trips,
+    .trips-section,
+    #trips-container.trips-grid {
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    main.group-layout {
+        display: block !important;
+        height: auto !important;
+        padding: 1rem !important;
+        padding-bottom: 3.5rem !important; /* Margen para que el footer no tape el botón */
+    }
+
+    /* Modificamos el botón verde para eliminar la sombra azul intrusa */
+    #btn-open-trip-modal.btn-add-trip {
+        width: 100% !important;
+        margin-top: 1.5rem !important;
+        margin-bottom: 2rem !important;
+        background-color: #10b981 !important; 
+        box-shadow: none !important; /* ¡Adiós al parche de color difuminado! */
+    }
+
+    .app-body {
+        min-height: 100vh !important;
+        height: auto !important;
+        overflow-y: auto !important;
+    }
+}
+
+/* ==========================================================================
+   REPARACIÓN DE PRIORIDAD DEL SPINNER DE CARGA
+   ========================================================================== */
+#app-loader.loader-backdrop {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: #0b0f19 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    z-index: 999999 !important;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#app-loader.loader-backdrop.hidden {
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+#app-loader .spinner {
+    width: 40px !important;
+    height: 40px !important;
+    border: 4px solid rgba(255, 255, 255, 0.1) !important;
+    border-left-color: #3b82f6 !important;
+    border-radius: 50% !important;
+    display: block !important;
+    animation: spin-loader 1s linear infinite !important;
+}
+
+@keyframes spin-loader {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#app-loader p {
+    color: #9ca3af !important;
+    font-size: 0.95rem !important;
+    margin-top: 0.5rem !important;
+}
+
+.app-nav {
+    width: 100% !important;
+    height: 60px !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+}
+
+#group-participants-count {
+    border-radius: 0px;
+}   

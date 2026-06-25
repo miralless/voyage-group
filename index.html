@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Mapa Grupal - Login & Registro</title>
+    <link rel="stylesheet" href="styles/styles.css">
+</head>
+<body>
+
+    <div class="auth-card">
+        <h2 id="auth-title">Iniciar Sesión</h2>
+        <p id="auth-subtitle">Entra para ver los recuerdos de tus viajes, ¡o añadir nuevos!</p>
+
+        <form id="login-form">
+            <div id="step-1">
+                <div class="input-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="ejemplo@correo.com" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" placeholder="Introduce tu contraseña" required>
+                </div>
+            </div>
+
+            <div id="step-2" style="display: none;">
+                <div class="avatar-upload">
+                    <div class="avatar-preview">
+                        <img id="avatar-image" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Avatar">
+                    </div>
+                    <label for="avatar-input" class="avatar-label">Subir Foto</label>
+                    <input type="file" id="avatar-input" accept="image/*" style="display: none;">
+                </div>
+
+                <div class="input-group">
+                    <label for="username">Nombre de usuario</label>
+                    <input type="text" id="username" placeholder="ej: carlos92">
+                </div>
+
+                <div class="input-group">
+                    <label for="nombreCompleto">Nombre y Apellido(s)</label>
+                    <input type="text" id="nombreCompleto" placeholder="ej: Carlos Pérez Gómez">
+                </div>
+                
+                <a href="#" id="btn-back" style="display: block; margin-bottom: 0.25rem; font-size: 0.85rem; color: var(--text-muted); text-decoration: none;">← Volver al paso anterior</a>
+            </div>
+
+            <button type="submit" id="submit-btn">Entrar</button>
+        </form>
+
+        <div class="auth-toggle">
+            <span id="toggle-text">¿No tienes una cuenta?</span> 
+            <a href="#" id="go-to-register">Regístrate aquí</a>
+        </div>
+    </div>
+
+    <!-- El script con la lógica que ya programamos -->
+    <script type="module" src="js/auth.js"></script>
+</body>
+</html>
