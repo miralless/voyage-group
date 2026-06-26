@@ -2,9 +2,10 @@
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
-    doc, getDoc, collection, addDoc, query, where, getDocs 
+    doc, getDoc, collection, addDoc, query, setDoc, where, getDocs 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { mostrarAlerta } from "./dialogs.js";
+
 
 // Elementos de la interfaz (Nav/Footer)
 const navUsername = document.getElementById("nav-username");
@@ -76,7 +77,7 @@ function inicializarMapaLogros() {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 20,
-        minZoom: 3
+        minZoom: 4
     }).addTo(mapaGeneral);
 }
 
@@ -121,9 +122,21 @@ async function consultarYRenderizarViajes() {
             return;
         }
 
-        querySnapshot.forEach((viajeDoc) => {
+        for (const viajeDoc of querySnapshot.docs) {
             const viajeId = viajeDoc.id;
             const viajeData = viajeDoc.data();
+
+            // 1. ¡NUEVO! Vamos a buscar las fotos a la colección independiente usando el ID del viaje
+            let fotosDelViaje = [];
+            try {
+                const fotosDocRef = doc(db, "viajes_fotos", viajeId);
+                const fotosDocSnap = await getDoc(fotosDocRef);
+                if (fotosDocSnap.exists()) {
+                    fotosDelViaje = fotosDocSnap.data().fotos || [];
+                }
+            } catch (err) {
+                console.error(`Error al traer las fotos del viaje ${viajeId}:`, err);
+            }
 
             // Formatear fechas para mostrar en la tarjeta
             const formatearFechaEspañol = (fechaString) => {
@@ -132,23 +145,18 @@ async function consultarYRenderizarViajes() {
                 return `${dia}/${mes}/${año}`;
             };
 
-            // Formatear fechas optimizadas para mostrar en la tarjeta
             const rangoFechas = (viajeData.fechaIda && viajeData.fechaVuelta) 
                 ? `${formatearFechaEspañol(viajeData.fechaIda)} - ${formatearFechaEspañol(viajeData.fechaVuelta)}` 
                 : "Sin fechas registradas";
 
-            // Generar el HTML de las fotos apiladas (Máximo 3 fotos para el efecto)
+            // Generar el HTML de las fotos apiladas leyendo de nuestra nueva variable 'fotosDelViaje'
             let fotosHTML = "";
-            if (viajeData.fotos && viajeData.fotos.length > 0) {
-                // Tomamos un máximo de 3 imágenes para que no se sature el espacio
-                const fotosAMostrar = viajeData.fotos.slice(0, 3);
-                
+            if (fotosDelViaje.length > 0) {
+                const fotosAMostrar = fotosDelViaje.slice(0, 3);
                 fotosAMostrar.forEach((fotoBase64, index) => {
-                    // Les asignamos una clase según su posición (0, 1, 2) para rotarlas diferente en CSS
                     fotosHTML += `<img src="${fotoBase64}" class="stack-img img-deg-${index}" alt="Foto viaje">`;
                 });
             } else {
-                // Si el viaje no tiene fotos, podemos poner un icono de paisaje o cámara sutil por defecto
                 fotosHTML = `
                     <div class="no-photos-placeholder">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -158,7 +166,7 @@ async function consultarYRenderizarViajes() {
                     </div>`;
             }
 
-            // Crear Tarjeta HTML del viaje con el nuevo layout de dos columnas
+            // Crear Tarjeta HTML del viaje
             const tarjetaViaje = document.createElement("div");
             tarjetaViaje.classList.add("trip-card");
             tarjetaViaje.innerHTML = `
@@ -180,13 +188,12 @@ async function consultarYRenderizarViajes() {
 
             tripsContainer.appendChild(tarjetaViaje);
 
+            // Pintar la silueta en el mapa (Ahora será 100% fiel al GeoJSON original)
             if (viajeData.lat && viajeData.lng) {
                 let capaGeografica;
 
-                // Si el viaje tiene guardada la silueta real en texto
                 if (viajeData.geojson) {
                     try {
-                        // ¡SOLUCIÓN! Convertimos el texto plano de vuelta a objeto JS/GeoJSON
                         const geojsonObjeto = JSON.parse(viajeData.geojson);
 
                         capaGeografica = L.geoJSON(geojsonObjeto, {
@@ -202,7 +209,6 @@ async function consultarYRenderizarViajes() {
                     }
                 } 
                 
-                // Si no hay silueta o falló el parseo, usamos el círculo como Plan B
                 if (!capaGeografica) {
                     capaGeografica = L.circle([viajeData.lat, viajeData.lng], {
                         color: '#3b82f6',
@@ -213,7 +219,6 @@ async function consultarYRenderizarViajes() {
                     });
                 }
 
-                // Añadimos popups e interactividad a la capa resultante
                 capaGeografica.addTo(mapaGeneral)
                     .bindPopup(`<b style="color:#111;">${viajeData.nombreViaje || viajeData.ciudad}</b><br><span style="color:#555;">📍 ${viajeData.ciudad}</span><br><span style="color:#777; font-size:0.8rem;">${rangoFechas}</span>`);
 
@@ -226,7 +231,7 @@ async function consultarYRenderizarViajes() {
 
                 marcadoresGrupo.push(capaGeografica);
             }
-        });
+        }
 
     } catch (error) {
         console.error("Error al renderizar los viajes:", error);
@@ -470,7 +475,7 @@ btnSubmitTrip.addEventListener("click", async (e) => {
         btnSubmitTrip.textContent = "Guardando en Firebase...";
         btnSubmitTrip.disabled = true;
 
-        // Procesamos fotos a Base64 si las hubiera
+        // 1. Procesamos fotos a Base64 si las hubiera (Siguen comprimiéndose a 800px para no saturar la red, pero van a otra colección)
         let arrayFotosBase64 = [];
         if (archivosFotos.length > 0) {
             btnSubmitTrip.textContent = "Procesando fotos...";
@@ -484,7 +489,7 @@ btnSubmitTrip.addEventListener("click", async (e) => {
                              destinoSeleccionadoGps.address.village || 
                              destinoSeleccionadoGps.name;
 
-        // Estructura perfecta para Firebase
+        // 2. Estructura del viaje - ¡QUITAMOS LA OPTIMIZACIÓN! Guardamos el GeoJSON original perfecto
         const nuevoViaje = {
             grupoId: grupoActivoId,
             nombreViaje: nombreViajeTexto,
@@ -492,20 +497,32 @@ btnSubmitTrip.addEventListener("click", async (e) => {
             ciudadCompleta: destinoSeleccionadoGps.display_name,
             fechaIda: fechaIdaTexto,
             fechaVuelta: fechaVueltaTexto,
-            fotos: arrayFotosBase64,
             lat: latitud,
             lng: longitud,
-            geojson: geojsonOptimizado ? JSON.stringify(geojsonOptimizado) : null,
+            // Guardamos el GeoJSON puro que viene de la API tal cual
+            geojson: destinoSeleccionadoGps.geojson ? JSON.stringify(destinoSeleccionadoGps.geojson) : null,
             creador: currentUserId,
             fechaRegistro: new Date()
         };
 
-        await addDoc(collection(db, "viajes"), nuevoViaje);
+        // 3. Guardamos el viaje y obtenemos la referencia del documento generado
+        const viajeDocRef = await addDoc(collection(db, "viajes"), nuevoViaje);
+        const nuevoViajeId = viajeDocRef.id; // Este es el ID único del viaje
+
+        // 4. ¡NUEVO! Guardamos las fotos en una colección aparte usando el MISMO ID del viaje
+        if (arrayFotosBase64.length > 0) {
+            btnSubmitTrip.textContent = "Subiendo fotos separadas...";
+            await setDoc(doc(db, "viajes_fotos", nuevoViajeId), {
+                fotos: arrayFotosBase64,
+                viajeId: nuevoViajeId,
+                grupoId: grupoActivoId
+            });
+        }
 
         limpiarFormularioModal();
         tripModal.close();
 
-        await mostrarAlerta(`¡Viaje "${nombreViajeTexto}" registrado con éxito! ✈️🌍`);
+        await mostrarAlerta(`¡Viaje "${nombreViajeTexto}" registrado con su silueta perfecta! ✈️🌍`);
         await consultarYRenderizarViajes();
 
     } catch (error) {

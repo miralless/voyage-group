@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle del Viaje</title>
+    <link rel="stylesheet" href="css/estilos.css"> <style>
+        :root {
+            --bg-gradient-start: #0f172a; /* Azul noche muy oscuro (Slate 900) */
+            --bg-gradient-end: #1e3a8a;   /* Azul marino profundo (Blue 900) */
+            --primary-color: #2563eb;     /* Azul eléctrico para botones y enlaces (Blue 600) */
+            --primary-hover: #1d4ed8;     /* Azul de interacción (Blue 700) */
+            --primary-glow: rgba(37, 99, 235, 0.2);
+            
+            --text-main: #1e293b;         /* Gris casi negro para títulos */
+            --text-muted: #64748b;        /* Gris suave para subtítulos */
+            --border-color: #cbd5e1;      /* Borde de los inputs */
+            --card-bg: #ffffff;           /* Fondo blanco limpio para la tarjeta */
+        }
+        body { background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));; color: white; font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* Contenedor principal para dejar espacio al Nav y Footer */
+        .main-content { flex: 1; max-width: 1000px; width: 100%; margin: 0 auto; padding: 1.5rem; box-sizing: border-box; margin-bottom: 4rem;}
+        
+        /* Ajustes de la galería flexible */
+        .galeria-contenedor { margin-top: 0; }
+        .grid-fotos { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+            gap: 1.5rem; 
+            margin-top: 1rem; 
+            
+            /* 1. Centra horizontalmente las celdas dentro del contenedor principal */
+            justify-content: center;
+            
+            /* 2. Centra los elementos (las fotos) horizontalmente dentro de su propia celda */
+            justify-items: center; 
+        }
+        
+        /* Tarjeta contenedora de la foto para que no se corte */
+        .foto-wrapper { 
+            position: relative; 
+            background: transparent;
+            border-radius: 8px; 
+            border: 1px solid #374151; 
+            overflow: hidden; 
+            cursor: pointer; 
+            transition: transform 0.2s; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            max-height: 35vh;
+        }
+
+        /* El botón de eliminar adaptado a móviles */
+        .btn-borrar-foto {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            
+            /* Un color rojo un poco más sólido para que contraste bien sobre cualquier foto */
+            background: rgba(220, 38, 38, 0.9); 
+            color: white;
+            border: none;
+            border-radius: 50%;
+            
+            /* Agrandamos un poco el botón (de 28px a 36px) para que sea fácil darle con el dedo */
+            width: 36px;
+            height: 36px;
+            
+            font-size: 1.4rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            
+            /* 1. CAMBIO CLAVE: Cambiamos 'opacity: 0' a 'opacity: 1' para que sea SIEMPRE visible */
+            opacity: 1; 
+            
+            /* Sombra sutil para que resalte y se note que es un elemento interactivo */
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+            
+            /* Evita que los toques rápidos en el móvil causen efectos extraños de zoom del navegador */
+            touch-action: manipulation; 
+        }
+
+        /* La imagen dentro de la miniatura */
+        .foto-item { 
+            width: 100%; 
+            height: 100%; 
+            display: block; 
+            /* 2. AJUSTE DE PROPORCIÓN: */
+            /* 'contain' hace que la foto se reescale por completo sin cortarse, */
+            /* mostrando barras negras/oscuras a los lados si la proporción es muy extrema */
+            object-fit: contain; 
+        }
+        
+        /* ... tus estilos de botones ... */
+
+        /* Estilos para el Modal de Zoom (<dialog>) */
+        #zoom-modal { 
+            border: none; 
+            background: transparent; 
+            padding: 0; 
+            max-width: 90vw; 
+            max-height: 90vh; 
+            outline: none; 
+        }
+        #zoom-modal::backdrop { 
+            background: rgba(0, 0, 0, 0.85); 
+            backdrop-filter: blur(4px); 
+        }
+        .zoom-img-container { 
+            position: relative; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        
+        /* 3. EL ZOOM PERFECTO PARA CUALQUIER PANTALLA: */
+        #zoom-img { 
+            max-width: 100%; 
+            /* Forzamos a que la imagen abierta NUNCA mida más del 80% de la altura de la pantalla */
+            max-height: 80vh; 
+            border-radius: 8px; 
+            /* Mantiene las proporciones exactas (ancho/alto) de la foto original */
+            object-fit: contain; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+        }
+        .btn-close-zoom { 
+            position: absolute; 
+            top: -40px; 
+            right: 0; 
+            background: transparent; 
+            color: white; 
+            border: none; 
+            font-size: 2rem; 
+            cursor: pointer; 
+        }
+
+        /* Estilos para el Modal de Confirmación de Borrado */
+        #confirmar-borrado-modal {
+            border: 1px solid #374151;
+            background: #111827; /* Fondo gris oscuro */
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-width: 85vw;
+            width: 75%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            outline: none;
+        }
+        #confirmar-borrado-modal::backdrop {
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+        }
+
+        #confirmar-foto-modal {
+            border: 1px solid #374151;
+            background: #111827; /* Fondo gris oscuro */
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-width: 85vw;
+            width: 75%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            outline: none;
+        }
+        #confirmar-foto-modal::backdrop {
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+        }
+
+
+        .modal-borrado-container h3 {
+            margin-top: 0;
+            font-size: 1.2rem;
+        }
+        .modal-borrado-container p {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 1.5rem;
+        }
+        .modal-borrado-acciones {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .modal-foto-container h3 {
+            margin-top: 0;
+            font-size: 1.2rem;
+        }
+        .modal-foto-container p {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 1.5rem;
+        }
+        .modal-foto-acciones {
+            display: flex;
+            gap: 1rem;
+        }
+
+
+
+        .btn-modal-cancelar {
+            flex: 1;
+            background: #4b5563;
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-modal-eliminar {
+            flex: 1;
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .btn-volver { background: #3b82f6; width: 100%; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 1.5rem; }
+        .btn-eliminar { background: #ef4444; width: 100%; color: white; margin-top: 1rem; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; float: right; }
+
+        /* Estilos para el Modal de Zoom (<dialog>) */
+        #zoom-modal { border: none; background: transparent; padding: 0; max-width: 90vw; max-height: 90vh; outline: none; }
+        #zoom-modal::backdrop { background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px); }
+        .zoom-img-container { position: relative; display: flex; justify-content: center; align-items: center; }
+        #zoom-img { max-width: 100%; max-height: 85vh; border-radius: 8px; object-fit: contain; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .btn-close-zoom { position: absolute; top: -40px; right: 0; background: transparent; color: white; border: none; font-size: 2rem; cursor: pointer; }
+
+        .app-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 65px;
+            /* 4. FOOTER: A juego con el nav, cierra el marco de la app */
+            background: #111827; 
+            border-top: 1px solid #1f2937;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .footer-avatar-img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%; /* La hace completamente redonda */
+            object-fit: cover;  /* Evita que la foto se deforme si no es perfectamente cuadrada */
+            border: 1.5px solid #6b7280; /* Borde gris por defecto que combina con el texto */
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .footer-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #6b7280; /* Iconos apagados por defecto */
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: color 0.2s ease;
+            gap: 4px;
+        }
+
+        .footer-icon {
+            width: 24px;
+            height: 24px;
+            stroke: #6b7280;
+            transition: stroke 0.2s ease, transform 0.2s ease;
+        }
+
+        /* Cuando la pestaña está activa o pasas el cursor */
+        .footer-link.active .footer-avatar-img {
+            border-color: #3b82f6; /* Cambia el borde a azul eléctrico */
+            transform: scale(1.05); /* Efecto de aumento sutil */
+        }
+
+        .footer-link.active .footer-icon {
+            stroke: #3b82f6;
+            transform: scale(1.05);
+        }
+
+        .app-nav {
+            height: 60px;
+            background-color: #111827; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1.5rem;
+            color: white;
+            border-bottom: 1px solid #1f2937; /* Línea divisoria muy fina */
+        }
+
+        .app-nav .logo {
+            font-weight: bold;
+            font-size: 1.3rem;
+            letter-spacing: 0.5px;
+            color: #3b82f6; 
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .nav-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #3b82f6;
+        }
+
+        .nav-username {
+            color: #f3f4f6;
+            font-weight: 500;
+        }
+
+        #nav-username {
+    font-style: italic;
+}
+    </style>
+</head>
+<body>
+
+    <nav class="app-nav">
+        <div class="logo"><span style="color: white;">Voyage</span>Group</div>
+        <div class="user-info">
+            <span id="nav-username">@usuario</span>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <h1 id="viaje-titulo" style="margin-top: -0.5rem; margin-bottom: 0.25rem;">Cargando viaje...</h1>
+        <p id="viaje-fechas" style="color: #3b82f6; margin: 0; font-size: 0.95rem; font-weight: 600;"></p>
+        <p id="viaje-ciudad-completa" style="color: #9ca3af; margin: 0.25rem 0 1.5rem 0; font-size: 0.85rem;"></p>
+
+        <label for="input-subir-foto" class="btn-volver" style="display: flex; align-items: center; justify-content: center; box-sizing: border-box; font-size: small;">
+            Añadir foto(s)
+        </label>
+        <input type="file" id="input-subir-foto" accept="image/*" multiple style="display: none;">
+
+        <div class="galeria-contenedor">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem;">
+                <h2>Recuerdos del viaje</h2>
+            </div>
+
+            <div id="galeria-fotos" class="grid-fotos">
+            </div>
+        </div>
+
+        <button class="btn-volver" onclick="window.location.href='grupo.html'">Volver al Grupo</button>
+        <br>
+        <button id="btn-eliminar-viaje" class="btn-eliminar">Eliminar Viaje</button>
+    </div>
+
+    <dialog id="zoom-modal">
+        <div class="zoom-img-container">
+            <button id="btn-close-zoom" class="btn-close-zoom">&times;</button>
+            <img id="zoom-img" src="" alt="Zoom foto">
+        </div>
+    </dialog>
+
+    <footer class="app-footer">
+        <a href="app.html" class="footer-link">
+            <svg class="footer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+        </a>
+        <a href="perfil.html" class="footer-link active">
+            <img id="footer-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Perfil" class="footer-avatar-img">
+        </a>
+    </footer>
+
+    <dialog id="confirmar-borrado-modal">
+        <div class="modal-borrado-container">
+            <h3>¿Eliminar viaje?</h3>
+            <p>Esta acción eliminará el viaje y todas sus fotos permanentemente del grupo.</p>
+            <div class="modal-borrado-acciones">
+                <button id="btn-cancelar-borrado" class="btn-modal-cancelar">Cancelar</button>
+                <button id="btn-confirmar-borrado" class="btn-modal-eliminar">Eliminar</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="confirmar-foto-modal">
+        <div class="modal-borrado-container">
+            <h3>¿Eliminar esta foto?</h3>
+            <p>La imagen se borrará permanentemente del álbum compartido de la cuadrilla.</p>
+            <div class="modal-borrado-acciones">
+                <button id="btn-cancelar-foto" class="btn-modal-cancelar">Cancelar</button>
+                <button id="btn-confirmar-foto" class="btn-modal-eliminar">Eliminar</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script type="module" src="js/mapa.js"></script>
+</body>
+</html>
