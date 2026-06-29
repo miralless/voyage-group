@@ -1,5 +1,5 @@
 import { db, auth } from "./firebase-config.js";
-import { doc, getDoc, deleteDoc, updateDoc, arrayUnion, arrayRemove, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { doc, getDoc, deleteDoc, updateDoc, arrayUnion, arrayRemove, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Capturar elementos del DOM
@@ -9,7 +9,7 @@ const viajeTitulo = document.getElementById("viaje-titulo");
 const viajeFechas = document.getElementById("viaje-fechas");
 const viajeCiudadCompleta = document.getElementById("viaje-ciudad-completa");
 const galeriaFotos = document.getElementById("galeria-fotos");
-const btnEliminar = document.getElementById("btn-eliminar-viaje");
+const btnAbandonar = document.getElementById("btn-eliminar-viaje"); // Mapeado a tu id de botón actual para que no rompa el HTML
 const inputSubirFoto = document.getElementById("input-subir-foto");
 
 // Elementos del Dialog de Zoom
@@ -17,7 +17,7 @@ const zoomModal = document.getElementById("zoom-modal");
 const zoomImg = document.getElementById("zoom-img");
 const btnCloseZoom = document.getElementById("btn-close-zoom");
 
-// Elementos del Dialog de Confirmación de Borrado
+// Elementos del Dialog de Confirmación de Abandono (Reutilizando tus modales)
 const borrarModal = document.getElementById("confirmar-borrado-modal");
 const btnCancelarBorrado = document.getElementById("btn-cancelar-borrado");
 const btnConfirmarBorrado = document.getElementById("btn-confirmar-borrado");
@@ -26,8 +26,190 @@ const fotoModal = document.getElementById("confirmar-foto-modal");
 const btnCancelarFoto = document.getElementById("btn-cancelar-foto");
 const btnConfirmarFoto = document.getElementById("btn-confirmar-foto");
 
-// Variable global temporal para saber qué foto está en proceso de borrado
+// Variables globales de los nuevos elementos
+const zonaAdmin = document.getElementById("zona-administrador");
+const btnEliminarGrupoTotal = document.getElementById("btn-eliminar-grupo-total");
+const inputAddMiembroEmail = document.getElementById("input-add-miembro-email");
+const btnAddMiembro = document.getElementById("btn-add-miembro");
+const listaGestionMiembros = document.getElementById("lista-gestion-miembros");
+const selectAddMiembro = document.getElementById("select-add-miembro");
+
+async function cargarUsuariosDisponiblesParaSelect(participantesActuales) {
+    try {
+        selectAddMiembro.innerHTML = '<option value="" disabled selected>Selecciona un usuario...</option>';
+        
+        // Traemos todos los usuarios registrados en la app
+        const usuariosRef = collection(db, "usuarios");
+        const querySnapshot = await getDocs(usuariosRef);
+        
+        let usuariosAgregadosAlSelect = 0;
+
+        const participantesLimpios = participantesActuales.map(id => id.trim());
+        querySnapshot.forEach((usuarioDoc) => {
+            const uidUsuario = usuarioDoc.id.trim();
+            const userData = usuarioDoc.data();
+            
+            // 2. Comparamos con el array normalizado
+            if (!participantesLimpios.includes(uidUsuario)) {
+                const option = document.createElement("option");
+                option.value = uidUsuario;
+                option.textContent = `@${userData.username} (${userData.nombreCompleto || userData.email})`;
+                selectAddMiembro.appendChild(option);
+                usuariosAgregadosAlSelect++;
+            }
+        });
+
+        if (usuariosAgregadosAlSelect === 0) {
+            selectAddMiembro.innerHTML = '<option value="" disabled>No hay más usuarios disponibles</option>';
+        }
+
+    } catch (error) {
+        console.error("Error al cargar la lista de usuarios para el select:", error);
+        selectAddMiembro.innerHTML = '<option value="" disabled>Error al cargar usuarios</option>';
+    }
+}
+
+async function verificarRolCreador(grupoData, idDelGrupo) {
+    grupoActivoId = idDelGrupo; 
+
+    if (grupoData.creador === currentUserId) {
+        zonaAdmin.style.display = "block"; 
+        await renderizarListaGestionMiembros(grupoData.participantes);
+        
+        // 👇 LLAMADA NUEVA: Rellenamos el select con los usuarios que no están en el grupo
+        await cargarUsuariosDisponiblesParaSelect(grupoData.participantes);
+    } else {
+        zonaAdmin.style.display = "none";
+    }
+}
+
+// Renderiza la lista de miembros con el botón de "Expulsar" al lado
+async function renderizarListaGestionMiembros(participantesIds) {
+    listaGestionMiembros.innerHTML = "";
+    
+    for (const uid of participantesIds) {
+        // Ignoramos al propio creador para que no se auto-expulse de la lista
+        if (uid === currentUserId) continue; 
+
+        const userDoc = await getDoc(doc(db, "usuarios", uid));
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            
+            const li = document.createElement("li");
+            li.style = "display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #374151;";
+            li.innerHTML = `
+                <span>@${userData.username} (${userData.nombreCompleto || userData.email})</span>
+                <button class="btn-expulsar" data-uid="${uid}" style="background: transparent; border: 1px solid #f87171; color: #f87171; padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer;">Expulsar</button>
+            `;
+            
+            // Evento para el botón expulsar miembro
+            li.querySelector(".btn-expulsar").addEventListener("click", async (e) => {
+                const uidAExpulsar = e.target.getAttribute("data-uid");
+                if (confirm(`¿Seguro que quieres expulsar a @${userData.username} del grupo?`)) {
+                    await expulsarMiembro(uidAExpulsar);
+                }
+            });
+
+            listaGestionMiembros.appendChild(li);
+        }
+    }
+}
+
+// 1. ACCIÓN: EXPULSAR MIEMBRO
+async function expulsarMiembro(uidMiembro) {
+    try {
+        const grupoRef = doc(db, "grupos", grupoActivoId);
+        
+        // Lo sacamos del array de participantes del grupo
+        await updateDoc(grupoRef, {
+            participantes: arrayRemove(uidMiembro)
+        });
+
+        // También lo quitamos de su lista de grupos en su perfil personal
+        const usuarioRef = doc(db, "usuarios", uidMiembro);
+        await updateDoc(usuarioRef, {
+            grupos: arrayRemove(grupoActivoId)
+        });
+
+        alert("Miembro expulsado del grupo.");
+        window.location.reload(); // Recargamos para actualizar el mapa y contadores
+    } catch (error) {
+        console.error("Error al expulsar:", error);
+        alert("Error al intentar expulsar al miembro.");
+    }
+}
+
+// 2. ACCIÓN: AÑADIR MIEMBRO POR EMAIL
+btnAddMiembro.addEventListener("click", async () => {
+    const targetUid = selectAddMiembro.value; // Obtenemos directamente el UID del usuario elegido
+    
+    if (!targetUid) {
+        alert("Por favor, selecciona primero un usuario de la lista.");
+        return;
+    }
+
+    try {
+        btnAddMiembro.textContent = "Añadiendo...⏳";
+        btnAddMiembro.disabled = true;
+
+        // 1. Metemos el UID en el array del grupo activo
+        await updateDoc(doc(db, "grupos", grupoActivoId), {
+            participantes: arrayUnion(targetUid)
+        });
+
+        // 2. Registramos el ID del grupo en el historial de grupos del usuario añadido
+        await updateDoc(doc(db, "usuarios", targetUid), {
+            grupos: arrayUnion(grupoActivoId)
+        });
+
+        alert("¡Miembro añadido con éxito!");
+        window.location.reload(); // Recarga para actualizar las listas
+
+    } catch (error) {
+        console.error("Error al añadir miembro desde el select:", error);
+        alert("Ocurrió un error al procesar la solicitud.");
+        btnAddMiembro.textContent = "Añadir";
+        btnAddMiembro.disabled = false;
+    }
+});
+
+// 3. ACCIÓN: ELIMINAR EL GRUPO POR COMPLETO (Borrado total)
+btnEliminarGrupoTotal.addEventListener("click", async () => {
+    const confirmacion1 = confirm("¡CUIDADO! ¿Estás completamente seguro de que quieres ELIMINAR todo el grupo? Esta acción es irreversible.");
+    if (!confirmacion1) return;
+
+    const confirmacion2 = prompt("Para confirmar la destrucción total, escribe la palabra: BORRAR");
+    if (confirmacion2 !== "BORRAR") {
+        alert("Confirmación incorrecta. Operación cancelada.");
+        return;
+    }
+
+    try {
+        btnEliminarGrupoTotal.textContent = "Destruyendo grupo... 🧨";
+        btnEliminarGrupoTotal.disabled = true;
+
+        // Borramos el documento del grupo de Firestore
+        await deleteDoc(doc(db, "grupos", grupoActivoId));
+
+        // Limpiamos los rastros locales de las variables de sesión
+        localStorage.removeItem("grupoActivoId");
+        localStorage.removeItem("viajeActivoId");
+
+        alert("El grupo ha sido eliminado permanentemente.");
+        window.location.href = "app.html"; // Regresa al dashboard general
+
+    } catch (error) {
+        console.error("Error al suprimir el grupo:", error);
+        alert("Las reglas de Firebase impidieron el borrado o hubo un fallo de red.");
+        btnEliminarGrupoTotal.textContent = "🔥 Eliminar Grupo Permanentemente";
+        btnEliminarGrupoTotal.disabled = false;
+    }
+});
+
+// Variables globales temporales
 let fotoSeleccionadaParaBorrar = null;
+let currentUserId = null; // 👈 Guardamos el UID del usuario logueado para sacarlo del array
+let grupoActivoId = null;
 
 // Recuperar ID del LocalStorage
 const viajeId = localStorage.getItem("viajeActivoId");
@@ -39,6 +221,7 @@ onAuthStateChanged(auth, async (user) => {
     } else if (!viajeId) {
         window.location.href = "grupo.html";
     } else {
+        currentUserId = user.uid; // Asignamos el ID globalmente
         await cargarDatosBaseUsuario(user.uid);
         await cargarDatosDelViaje();
     }
@@ -77,6 +260,17 @@ async function cargarDatosDelViaje() {
         viajeFechas.textContent = `📅 Del ${formatearFecha(viajeData.fechaIda)} al ${formatearFecha(viajeData.fechaVuelta)}`;
         viajeCiudadCompleta.textContent = `📍 ${viajeData.ciudadCompleta}`;
 
+        // 👇 NUEVA LÓGICA: Obtener el ID del grupo asociado al viaje para validar el creador
+        const grupoIdDelViaje = viajeData.grupoId || localStorage.getItem("grupoActivoId");
+        if (grupoIdDelViaje) {
+            const grupoRef = doc(db, "grupos", grupoIdDelViaje);
+            const grupoSnap = await getDoc(grupoRef);
+            
+            if (grupoSnap.exists()) {
+                await verificarRolCreador(grupoSnap.data(), grupoIdDelViaje);
+            }
+        }
+
         await cargarFotosDelViaje();
 
     } catch (error) {
@@ -95,44 +289,32 @@ async function cargarFotosDelViaje() {
             const listaFotos = fotosSnap.data().fotos;
             
             listaFotos.forEach(fotoBase64 => {
-                // 1. Creamos el contenedor de la tarjeta
                 const wrapper = document.createElement("div");
                 wrapper.classList.add("foto-wrapper");
 
-                // 2. Creamos la imagen
                 const imgElement = document.createElement("img");
                 imgElement.src = fotoBase64;
                 imgElement.classList.add("foto-item");
                 imgElement.alt = "Foto de la cuadrilla";
 
-                // Evento para abrir el zoom al pulsar en la foto
                 imgElement.addEventListener("click", () => {
                     zoomImg.src = fotoBase64;
                     zoomModal.showModal();
                 });
 
-                // 3. ¡AQUÍ SE CREA EL BOTÓN EN EL JS!
                 const btnBorrarFoto = document.createElement("button");
-                btnBorrarFoto.innerHTML = "&times;"; // Esto pinta una '×' elegante
-                btnBorrarFoto.classList.add("btn-borrar-foto"); // Le da el estilo CSS que pusimos
+                btnBorrarFoto.innerHTML = "&times;"; 
+                btnBorrarFoto.classList.add("btn-borrar-foto"); 
                 btnBorrarFoto.title = "Eliminar foto permanentemente";
                 
-                // Evento para borrar esta foto concreta al pulsar la ×
                 btnBorrarFoto.addEventListener("click", (e) => {
-                    e.stopPropagation(); // Evita que se abra el zoom
-                    
-                    // Guardamos la foto actual en la variable temporal
+                    e.stopPropagation(); 
                     fotoSeleccionadaParaBorrar = fotoBase64; 
-                    
-                    // Abrimos el nuevo modal
                     fotoModal.showModal();
                 });
 
-                // 4. Metemos la imagen Y el botón dentro del contenedor
                 wrapper.appendChild(imgElement);
-                wrapper.appendChild(btnBorrarFoto); // <--- Aquí se añade físicamente al HTML de la tarjeta
-                
-                // 5. Metemos la tarjeta completa en la cuadrícula de la pantalla
+                wrapper.appendChild(btnBorrarFoto); 
                 galeriaFotos.appendChild(wrapper);
             });
         } else {
@@ -157,10 +339,8 @@ inputSubirFoto.addEventListener("change", async (e) => {
     const fotosDocRef = doc(db, "viajes_fotos", viajeId);
 
     try {
-        // Asegurarnos de que el documento en viajes_fotos existe (por si acaso)
         const fotosSnap = await getDoc(fotosDocRef);
         if (!fotosSnap.exists()) {
-            // Si el viaje no tenía fotos previas, creamos la estructura base
             await setDoc(fotosDocRef, {
                 viajeId: viajeId,
                 grupoId: localStorage.getItem("grupoActivoId") || "",
@@ -168,17 +348,13 @@ inputSubirFoto.addEventListener("change", async (e) => {
             });
         }
 
-        // Procesar cada archivo seleccionado
         for (const archivo of archivos) {
             const base64Str = await transformarABase64(archivo);
-            
-            // Inyectamos la imagen directamente en el array de Firestore de forma atómica
             await updateDoc(fotosDocRef, {
                 fotos: arrayUnion(base64Str)
             });
         }
 
-        // Limpiar el input y recargar la galería actualizada
         inputSubirFoto.value = ""; 
         await cargarFotosDelViaje();
 
@@ -191,7 +367,6 @@ inputSubirFoto.addEventListener("change", async (e) => {
     }
 });
 
-// Función auxiliar para convertir File/Blob a String Base64
 function transformarABase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -207,13 +382,9 @@ function transformarABase64(file) {
 async function eliminarFotoEspecifica(fotoBase64) {
     try {
         const fotosDocRef = doc(db, "viajes_fotos", viajeId);
-        
-        // Quita la cadena Base64 exacta que coincide del array en la nube
         await updateDoc(fotosDocRef, {
             fotos: arrayRemove(fotoBase64)
         });
-
-        // Refrescar la pantalla
         await cargarFotosDelViaje();
     } catch (error) {
         console.error("Error al eliminar la foto de Firestore:", error);
@@ -225,59 +396,62 @@ async function eliminarFotoEspecifica(fotoBase64) {
 btnCloseZoom.addEventListener("click", () => { zoomModal.close(); zoomImg.src = ""; });
 zoomModal.addEventListener("click", (e) => { if (e.target === zoomModal) { zoomModal.close(); zoomImg.src = ""; } });
 
-// LÓGICA DE BORRADO EN CASCADA TOTAL CON DIALOG
-// 1. Al pulsar el botón original de la pantalla, abrimos el modal personalizado
-btnEliminar.addEventListener("click", () => {
+// ==========================================================================
+// NUEVA LÓGICA: ABANDONAR EL VIAJE ACTUAL (EN LUGAR DE BORRADO TOTAL)
+// ==========================================================================
+btnAbandonar.addEventListener("click", () => {
     borrarModal.showModal();
 });
 
-// 2. Si el usuario pulsa "Cancelar", cerramos el modal sin hacer nada
 btnCancelarBorrado.addEventListener("click", () => {
     borrarModal.close();
 });
 
-// 3. Si pulsa fuera del recuadro del modal, también se cierra
 borrarModal.addEventListener("click", (e) => {
     if (e.target === borrarModal) {
         borrarModal.close();
     }
 });
 
-// 4. Si el usuario confirma que quiere destruir el viaje
+// Ejecución del abandono al confirmar en el Dialog modal
 btnConfirmarBorrado.addEventListener("click", async () => {
+    if (!currentUserId || !viajeId) return;
+
     try {
-        // Modificamos el aspecto del botón de confirmación mientras procesa
-        btnConfirmarBorrado.textContent = "Borrando... ⏳";
+        btnConfirmarBorrado.textContent = "Saliendo del viaje... ⏳";
         btnConfirmarBorrado.disabled = true;
         btnCancelarBorrado.disabled = true;
 
-        // Ejecutamos el borrado en las dos colecciones de Firebase
-        await deleteDoc(doc(db, "viajes", viajeId));
-        await deleteDoc(doc(db, "viajes_fotos", viajeId));
+        const viajeRef = doc(db, "viajes", viajeId);
+
+        // Sacamos de forma atómica nuestro uid del array 'participantes' de este viaje
+        await updateDoc(viajeRef, {
+            participantes: arrayRemove(currentUserId)
+        });
+
+        // Limpiamos los rastros locales del viaje actual
+        localStorage.removeItem("viajeActivoId");
+        localStorage.removeItem("viajeActivoCiudad");
 
         borrarModal.close();
         window.location.href = "grupo.html";
         
     } catch (error) {
-        console.error("Error al ejecutar el borrado:", error);
-        alert("Hubo un fallo al intentar eliminar el viaje.");
+        console.error("Error al intentar abandonar el viaje:", error);
+        alert("Hubo un fallo al intentar salir del viaje.");
         
-        // Si falla, restauramos los botones del modal
-        btnConfirmarBorrado.textContent = "Eliminar";
+        btnConfirmarBorrado.textContent = "Confirmar";
         btnConfirmarBorrado.disabled = false;
         btnCancelarBorrado.disabled = false;
     }
 });
 
 // LÓGICA DEL MODAL PARA ELIMINAR FOTO INDIVIDUAL
-
-// Si pulsa "Cancelar", cerramos y limpiamos la variable
 btnCancelarFoto.addEventListener("click", () => {
     fotoModal.close();
     fotoSeleccionadaParaBorrar = null;
 });
 
-// Si pulsa fuera del recuadro del modal, también se cierra
 fotoModal.addEventListener("click", (e) => {
     if (e.target === fotoModal) {
         fotoModal.close();
@@ -285,7 +459,6 @@ fotoModal.addEventListener("click", (e) => {
     }
 });
 
-// Si confirma el borrado pulsando el botón rojo del modal
 btnConfirmarFoto.addEventListener("click", async () => {
     if (!fotoSeleccionadaParaBorrar) return;
 
@@ -294,17 +467,13 @@ btnConfirmarFoto.addEventListener("click", async () => {
         btnConfirmarFoto.disabled = true;
         btnCancelarFoto.disabled = true;
 
-        // Llamamos a la función que ya tenías programada pasándole la variable temporal
         await eliminarFotoEspecifica(fotoSeleccionadaParaBorrar);
-
-        // Cerramos el modal con éxito
         fotoModal.close();
         
     } catch (error) {
         console.error("Error al confirmar borrado de foto:", error);
         alert("No se pudo eliminar la foto.");
     } finally {
-        // Restauramos los estados originales de los botones y la variable temporal
         btnConfirmarFoto.textContent = "Eliminar";
         btnConfirmarFoto.disabled = false;
         btnCancelarFoto.disabled = false;

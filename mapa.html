@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalle del Viaje</title>
-    <link rel="stylesheet" href="css/estilos.css"> <style>
+    <style>
         :root {
             --bg-gradient-start: #0f172a; /* Azul noche muy oscuro (Slate 900) */
             --bg-gradient-end: #1e3a8a;   /* Azul marino profundo (Blue 900) */
@@ -227,8 +227,8 @@
             cursor: pointer;
         }
         
-        .btn-volver { background: #3b82f6; width: 100%; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 1.5rem; }
-        .btn-eliminar { background: #ef4444; width: 100%; color: white; margin-top: 1rem; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; float: right; }
+        .btn-volver { background: #3b82f6; width: 100%; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 1.5rem; height: 40px; }
+        .btn-eliminar { background: #ef4444; width: 100%; color: white; margin-top: 1rem; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; float: right; height: 40px; }
 
         /* Estilos para el Modal de Zoom (<dialog>) */
         #zoom-modal { border: none; background: transparent; padding: 0; max-width: 90vw; max-height: 90vh; outline: none; }
@@ -363,7 +363,33 @@
 
         <button class="btn-volver" onclick="window.location.href='grupo.html'">Volver al Grupo</button>
         <br>
-        <button id="btn-eliminar-viaje" class="btn-eliminar">Eliminar Viaje</button>
+        <button id="btn-eliminar-viaje" class="btn-eliminar">Abandonar Viaje</button>
+
+        <div id="zona-administrador" style="display: none; background: #111827; padding: 1.5rem; border-radius: 8px; margin-top: 4.5rem; border: 1px solid #374151; margin-bottom: -0.5rem;">
+            <h3 style="color: #3b82f6; margin-top: 0;">🛠️ Panel de Creador</h3>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display:block; font-size:0.85rem; color:#9ca3af; margin-bottom:0.5rem;">Seleccionar miembro para añadir:</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <select id="select-add-miembro" style="flex: 1; width: 10rem; padding: 0.5rem; border-radius: 6px; border: 1px solid #4b5563; background: #111827; color: white;">
+                        <option value="" disabled selected>Cargando usuarios disponibles...</option>
+                    </select>
+                    <button id="btn-add-miembro" style="background: #2563eb; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">Añadir</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display:block; font-size:0.85rem; color:#9ca3af; margin-bottom:0.5rem;">Gestionar Miembros de la Cuadrilla:</label>
+                <ul id="lista-gestion-miembros" style="list-style: none; padding: 0; margin: 0;">
+                    </ul>
+            </div>
+
+            <hr style="border-color: #374151; margin: 1.5rem 0;">
+
+            <button id="btn-eliminar-grupo-total" style="background: #ef4444; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%;">
+                Eliminar Viaje Permanentemente
+            </button>
+        </div>
     </div>
 
     <dialog id="zoom-modal">
@@ -387,11 +413,14 @@
 
     <dialog id="confirmar-borrado-modal">
         <div class="modal-borrado-container">
-            <h3>¿Eliminar viaje?</h3>
-            <p>Esta acción eliminará el viaje y todas sus fotos permanentemente del grupo.</p>
+            <h3>¿Abandonar viaje?</h3>
+            
+            <p>Esta acción te eliminará de la lista de participantes. Dejarás de tener acceso a este viaje y a sus recuerdos compartidos.</p>
+            
             <div class="modal-borrado-acciones">
                 <button id="btn-cancelar-borrado" class="btn-modal-cancelar">Cancelar</button>
-                <button id="btn-confirmar-borrado" class="btn-modal-eliminar">Eliminar</button>
+                
+                <button id="btn-confirmar-borrado" class="btn-modal-eliminar">Abandonar</button>
             </div>
         </div>
     </dialog>

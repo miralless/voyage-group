@@ -37,6 +37,46 @@ let grupoActivoId = localStorage.getItem("grupoActivoId");
 let mapaGeneral = null;
 let marcadoresGrupo = []; // Array para limpiar/pintar pines
 
+const checklistParticipantes = document.getElementById("trip-participants-checklist");
+
+// Función para cargar los miembros del grupo en el modal con checkboxes
+async function cargarMiembrosEnChecklist(arrayUidsMiembros) {
+    checklistParticipantes.innerHTML = ""; // Limpiar cargando
+    
+    for (const uid of arrayUidsMiembros) {
+        try {
+            // Obtenemos los datos de perfil de cada usuario en el grupo
+            const userDoc = await getDoc(doc(db, "usuarios", uid));
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                
+                const label = document.createElement("label");
+                label.style.display = "flex";
+                label.style.alignItems = "center";
+                label.style.gap = "8px";
+                label.style.color = "#e5e7eb";
+                label.style.cursor = "pointer";
+                label.style.fontSize = "0.9rem";
+
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.value = uid;
+                checkbox.classList.add("viaje-miembro-check");
+                // Por defecto, podemos dejar el usuario actual marcado
+                if (uid === auth.currentUser.uid) {
+                    checkbox.checked = true;
+                }
+
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(`@${userData.username || "usuario"}`)); // 
+                checklistParticipantes.appendChild(label);
+            }
+        } catch (error) {
+            console.error("Error al cargar miembro en el checklist:", error);
+        }
+    }
+}
+
 // GUARDIÁN DE SEGURIDAD
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
@@ -71,7 +111,7 @@ async function cargarDatosBaseUsuario(uid) {
 
 // Inicializar el mapa interactivo
 function inicializarMapaLogros() {
-    mapaGeneral = L.map('group-main-map').setView([25.0, 10.0], 2);
+    mapaGeneral = L.map('group-main-map').setView([39, -0.1], 4);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -81,7 +121,6 @@ function inicializarMapaLogros() {
     }).addTo(mapaGeneral);
 }
 
-// Cargar información del grupo de amigos
 async function cargarDatosGrupoCompleto() {
     try {
         const grupoRef = doc(db, "grupos", grupoActivoId);
@@ -95,7 +134,17 @@ async function cargarDatosGrupoCompleto() {
             const numParticipantes = grupoData.participantes ? grupoData.participantes.length : 1;
             groupParticipantsCount.textContent = `${numParticipantes} participante(s) en la cuadrilla`;
             
+            // 1. Cargamos dinámicamente los checkboxes pasándole los participantes reales del grupo
+            if (grupoData.participantes && grupoData.participantes.length > 0) {
+                // Añadimos el await para que no salte al renderizado de viajes hasta poblar el checklist
+                await cargarMiembrosEnChecklist(grupoData.participantes);
+            } else {
+                checklistParticipantes.innerHTML = `<p style="color: #9ca3af; font-size: 0.8rem; margin: 0; font-style: italic;">No hay miembros registrados en este grupo.</p>`;
+            }
+
+            // 2. Traer los viajes y renderizar el tablón
             await consultarYRenderizarViajes();
+            
         } else {
             console.error("No se encontró el documento del grupo.");
             await mostrarAlerta("No se ha podido localizar este grupo de amigos.");
@@ -122,9 +171,22 @@ async function consultarYRenderizarViajes() {
             return;
         }
 
+        // Variable para controlar si el usuario actual tiene acceso a AL MENOS un viaje
+        let hayViajesVisibles = false;
+
         for (const viajeDoc of querySnapshot.docs) {
             const viajeId = viajeDoc.id;
             const viajeData = viajeDoc.data();
+
+            // ─── 🔒 FILTRO DE PRIVACIDAD CRUCIAL ───
+            // Si el viaje tiene registrados sus participantes y el usuario actual NO está incluido, 
+            // nos saltamos el viaje por completo (no se añade al mapa ni al contenedor visual)
+            if (viajeData.participantes && !viajeData.participantes.includes(currentUserId)) {
+                continue; // Salta al siguiente viaje del bucle sin ejecutar lo de abajo
+            }
+
+            // Marcamos que el usuario sí tiene al menos un viaje visible
+            hayViajesVisibles = true;
 
             // 1. ¡NUEVO! Vamos a buscar las fotos a la colección independiente usando el ID del viaje
             let fotosDelViaje = [];
@@ -231,6 +293,11 @@ async function consultarYRenderizarViajes() {
 
                 marcadoresGrupo.push(capaGeografica);
             }
+        }
+
+        // Si existen viajes en el grupo pero el usuario no es participante de NINGUNO
+        if (!hayViajesVisibles) {
+            tripsContainer.innerHTML = `<p class="loading-text" style="color: #9ca3af; text-align: center; padding: 1.5rem; width:100%;">No tienes viajes disponibles en este grupo.</p>`;
         }
 
     } catch (error) {
@@ -482,6 +549,15 @@ btnSubmitTrip.addEventListener("click", async (e) => {
             arrayFotosBase64 = await procesarFotosABase64(archivosFotos);
         }
 
+        const checks = document.querySelectorAll(".viaje-miembro-check:checked");
+        const participantesViaje = Array.from(checks).map(cb => cb.value);
+
+        // Asegurar que al menos el creador o alguien va al viaje
+        if (participantesViaje.length === 0) {
+            alert("Debes seleccionar al menos a un participante que haya ido al viaje.");
+            return;
+        }
+
         const latitud = parseFloat(destinoSeleccionadoGps.lat);
         const longitud = parseFloat(destinoSeleccionadoGps.lon);
         const ciudadLimpia = destinoSeleccionadoGps.address.city || 
@@ -501,6 +577,7 @@ btnSubmitTrip.addEventListener("click", async (e) => {
             lng: longitud,
             // Guardamos el GeoJSON puro que viene de la API tal cual
             geojson: destinoSeleccionadoGps.geojson ? JSON.stringify(destinoSeleccionadoGps.geojson) : null,
+            participantes: participantesViaje,
             creador: currentUserId,
             fechaRegistro: new Date()
         };

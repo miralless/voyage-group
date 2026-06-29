@@ -187,7 +187,7 @@ btnSubmitJoin.addEventListener("click", async () => {
             grupos: arrayUnion(grupoId)
         });
 
-        await mostrarAlerta(`¡Te has unido con éxito al viaje: "${grupoData.nombre}"! 🥳`);
+        await mostrarAlerta(`¡Te has unido con éxito al grupo: "${grupoData.nombre}"! 🥳`);
 
         inputJoinCode.value = "";
         groupModal.classList.remove("open");

@@ -45,7 +45,7 @@ body:has(.auth-card) {
 }
 
 .auth-card {
-    background: var(--card-bg);
+    background: #111827;
     padding: 2.2rem 2rem;
     border-radius: 20px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -209,7 +209,6 @@ button:active {
     .auth-toggle {
         margin-top: 0.15rem;
         padding-top: 1rem;
-        border-top: 1px solid #f1f5f9; /* Línea divisoria fina en móviles */
     }
 
     #login-form input {
@@ -813,7 +812,7 @@ main.group-layout {
 /* 2. Sección del mapa de logros */
 .map-achievements-container {
     width: 100%;
-    height: 320px;
+    height: 13.5rem;
     background: #1f2937;
     border: 1px solid #374151;
     border-radius: 16px;
@@ -957,7 +956,7 @@ main.group-layout {
     color: white;
     border: none;
     padding: 0.55rem 1.1rem;
-    border-radius: 8px;
+    border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
@@ -1034,7 +1033,7 @@ main.group-layout {
     #btn-open-trip-modal.btn-add-trip {
         width: 100% !important;
         margin-top: 1.5rem !important;
-        margin-bottom: 2rem !important;
+        margin-bottom: 1.5rem !important;
         background-color: #10b981 !important; 
         box-shadow: none !important; /* ¡Adiós al parche de color difuminado! */
     }

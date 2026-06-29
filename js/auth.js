@@ -54,7 +54,7 @@ function resetFormTabs() {
         authTitle.textContent = "Crear Cuenta";
         authSubtitle.textContent = "Paso 1: Datos de acceso";
         submitBtn.textContent = "Siguiente";
-        toggleText.textContent = "¿Ya tienes una cuenta?";
+        toggleText.textContent = "¿Ya tienes cuenta?";
         toggleLink.textContent = "Inicia sesión aquí";
         step1.style.display = "block";
         step2.style.display = "none";
@@ -65,7 +65,7 @@ function resetFormTabs() {
         authTitle.textContent = "Iniciar Sesión";
         authSubtitle.textContent = "Entra para ver los recuerdos de tus viajes, ¡o añadir nuevos!";
         submitBtn.textContent = "Entrar";
-        toggleText.textContent = "¿No tienes una cuenta?";
+        toggleText.textContent = "¿No tienes cuenta?";
         toggleLink.textContent = "Regístrate aquí";
         step1.style.display = "block";
         step2.style.display = "none";
@@ -125,7 +125,7 @@ loginForm.addEventListener("submit", async (e) => {
             const nombreCompleto = nombreCompletoInput.value.trim();
 
             try {
-                // 1. Comprobamos si el username está libre en Firestore
+                // 1. Comprobamos si el username está libre en Firestore (Ahora permitido por las reglas)
                 const usuariosRef = collection(db, "usuarios");
                 const q = query(usuariosRef, where("username", "==", username));
                 const querySnapshot = await getDocs(q);
@@ -135,24 +135,28 @@ loginForm.addEventListener("submit", async (e) => {
                     return;
                 }
 
-                // Cambiamos el texto del botón para que el usuario vea que está cargando
-                submitBtn.textContent = "Subiendo perfil...";
+                // Cambiamos el texto del botón
+                submitBtn.textContent = "Creando cuenta...";
                 submitBtn.disabled = true;
 
-                // 2. RECOGEMOS EL ARCHIVO DE LA FOTO
-                let fotoPerfilUrl = "https://cdn-icons-png.flaticon.com/512/149/149071.png"; // Foto por defecto si no sube nada
+                // 2. CREAMOS EL USUARIO EN FIREBASE AUTH PRIMERO
+                // Así si el email ya existe o es inválido, saltará al catch antes de procesar fotos
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // 3. RECOGEMOS Y SUBIMOS EL ARCHIVO DE LA FOTO
+                let fotoPerfilUrl = "https://cdn-icons-png.flaticon.com/512/149/149071.png"; // Foto por defecto
                 const file = avatarInput.files[0];
 
                 if (file) {
-                    // Preparamos los datos para enviar a Cloudinary (Formulario virtual)
+                    submitBtn.textContent = "Subiendo foto de perfil... 📸";
+                    
                     const formData = new FormData();
                     formData.append("file", file);
                     formData.append("upload_preset", "viajes_preset"); 
 
-                    // Reemplaza 'TU_CLOUD_NAME' por el tuyo de la consola de Cloudinary
                     const cloudName = "dcb6sj2ox";
                     
-                    // Enviamos la foto a Cloudinary
                     const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
                         method: "POST",
                         body: formData
@@ -166,11 +170,9 @@ loginForm.addEventListener("submit", async (e) => {
                     fotoPerfilUrl = cloudinaryData.secure_url; 
                 }
 
-                // 3. CREAMOS EL USUARIO EN FIREBASE AUTH
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                // 4. GUARDAMOS LA FICHA EN FIRESTORE (Ahora con la URL real de Cloudinary)
+                // 4. GUARDAMOS LA FICHA EN FIRESTORE
+                // Como ya estamos logueados de la línea anterior, `request.auth.uid == usuarioId` se cumple perfectamente
+                submitBtn.textContent = "Guardando perfil...";
                 await setDoc(doc(db, "usuarios", user.uid), {
                     username: username,
                     nombreCompleto: nombreCompleto,
@@ -182,8 +184,13 @@ loginForm.addEventListener("submit", async (e) => {
                 window.location.href = "app.html";
 
             } catch (error) {
-                console.error(error); // Conservado
-                await mostrarAlerta("Hubo un error en el registro: " + error.message);
+                console.error(error);
+                // Usamos tu función de manejar errores para los errores típicos de Auth (email duplicado, etc.)
+                if (error.code) {
+                    await manejarErrores(error.code);
+                } else {
+                    await mostrarAlerta("Hubo un error en el registro: " + error.message);
+                }
                 submitBtn.textContent = "Finalizar Registro";
                 submitBtn.disabled = false;
             }

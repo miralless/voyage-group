@@ -41,7 +41,11 @@
                     <p class="loading-text" style="color: #9ca3af; text-align: center; padding: 1.5rem;">No hay viajes registrados en este grupo todavía. ¡Crea el primero!</p>
                 </div>
 
-                <button id="btn-open-trip-modal" class="btn-add-trip" style="width: 100%; margin-top: 0.5rem;">+ Nuevo Viaje</button>
+                <button id="btn-open-trip-modal" class="btn-add-trip" style="width: 100%; height: 40px; margin-top: 0.5rem;">Agregar Nuevo Viaje</button>
+                
+                <button id="btn-abandonar-grupo" style="background: #ef4444; height: 40px; border: 1px solid #ef4444; color: white; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; margin-top:-5rem; margin-bottom: 1.5rem; transition: background 0.2s;">
+                    Abandonar Grupo
+                </button>
             </div>
         </section>
 
@@ -88,6 +92,13 @@
             </div>
 
             <div>
+                <label style="color: #d1d5db; font-size: 0.85rem; display: block; margin-bottom: 0.4rem; font-weight: 600;">¿Quiénes han ido a este viaje?:</label>
+                <div id="trip-participants-checklist" style="background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 0.75rem; max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <p style="color: #9ca3af; font-size: 0.8rem; margin: 0; font-style: italic;">Cargando miembros del grupo...</p>
+                </div>
+            </div>
+
+            <div>
                 <label style="color: #d1d5db; font-size: 0.85rem; display: block; margin-bottom: 0.4rem;">Fotos del viaje:</label>
                 <input type="file" id="new-trip-photos" accept="image/*" multiple style="width: 100%; padding: 0.5rem; background: #1f2937; border: 1px solid #374151; border-radius: 8px; color: white; font-size: 0.85rem;">
                 <small style="color: #9ca3af; font-size: 0.75rem; display: block; margin-top: 0.25rem;">Puedes seleccionar varias fotos a la vez.</small>
@@ -96,7 +107,7 @@
 
         <div class="dialog-actions">
             <button class="dialog-btn dialog-btn-secondary" id="btn-close-trip-modal">Cancelar</button>
-            <button class="dialog-btn dialog-btn-primary" id="btn-submit-trip">Guardar Viaje</button>
+            <button class="dialog-btn dialog-btn-primary" id="btn-submit-trip">Crear Viaje</button>
         </div>
     </dialog>
 
