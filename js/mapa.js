@@ -316,13 +316,18 @@ btnConfirmarDestruir.addEventListener("click", async () => {
 async function cargarFotosDelViaje() {
     galeriaFotos.innerHTML = "";
     try {
-        const fotosDocRef = doc(db, "viajes_fotos", viajeId);
-        const fotosSnap = await getDoc(fotosDocRef);
+        // Apuntamos a la subcolección 'fotos' dentro del viaje activo
+        const fotosSubcoleccionRef = collection(db, "viajes", viajeId, "fotos");
+        
+        // Traemos los documentos (puedes añadir un query con orderBy si guardas timestamp)
+        const querySnapshot = await getDocs(fotosSubcoleccionRef);
 
-        if (fotosSnap.exists() && fotosSnap.data().fotos?.length > 0) {
-            const listaFotos = fotosSnap.data().fotos;
-            
-            listaFotos.forEach(fotoBase64 => {
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach((fotoDoc) => {
+                const fotoData = fotoDoc.data();
+                const fotoBase64 = fotoData.url;
+                const fotoDocId = fotoDoc.id; // Guardamos el ID del documento para poder borrarlo luego
+
                 const wrapper = document.createElement("div");
                 wrapper.classList.add("foto-wrapper");
 
@@ -343,7 +348,8 @@ async function cargarFotosDelViaje() {
                 
                 btnBorrarFoto.addEventListener("click", (e) => {
                     e.stopPropagation(); 
-                    fotoSeleccionadaParaBorrar = fotoBase64; 
+                    // 💥 CAMBIO: Ahora guardamos el ID del documento de la foto para borrarlo
+                    fotoSeleccionadaParaBorrar = fotoDocId; 
                     fotoModal.showModal();
                 });
 
@@ -355,7 +361,7 @@ async function cargarFotosDelViaje() {
             galeriaFotos.innerHTML = `<p style="color: #6b7280; font-style: italic;">No se han añadido fotos para este viaje todavía.</p>`;
         }
     } catch (error) {
-        console.error("Error al cargar el álbum de fotos:", error);
+        console.error("Error al cargar el álbum de fotos desde la subcolección:", error);
     }
 }
 
@@ -368,22 +374,19 @@ inputSubirFoto.addEventListener("change", async (e) => {
     labelOriginal.textContent = "Subiendo... ⏳";
     labelOriginal.style.pointerEvents = "none";
 
-    const fotosDocRef = doc(db, "viajes_fotos", viajeId);
-
     try {
-        const fotosSnap = await getDoc(fotosDocRef);
-        if (!fotosSnap.exists()) {
-            await setDoc(fotosDocRef, {
-                viajeId: viajeId,
-                grupoId: localStorage.getItem("grupoActivoId") || "",
-                fotos: []
-            });
-        }
+        // Referencia a la subcolección interna 'fotos' del viaje
+        const fotosSubcoleccionRef = collection(db, "viajes", viajeId, "fotos");
 
         for (const archivo of archivos) {
-            const base64Str = await transformarABase64(archivo);
-            await updateDoc(fotosDocRef, {
-                fotos: arrayUnion(base64Str)
+            // Transformamos y comprimimos la imagen a Base64
+            const base64Str = await transformarYComprimirABase64(archivo);
+            
+            // Creamos un documento nuevo único para esta foto concreta
+            await addDoc(fotosSubcoleccionRef, {
+                url: base64Str,
+                subidaPor: currentUserId,
+                fechaSubida: Date.now()
             });
         }
 
@@ -391,7 +394,7 @@ inputSubirFoto.addEventListener("change", async (e) => {
         await cargarFotosDelViaje();
 
     } catch (error) {
-        console.error("Error al subir las imágenes a Firebase:", error);
+        console.error("Error al subir las imágenes a la subcolección de Firebase:", error);
         mostrarMensajePantalla("Hubo un fallo al intentar guardar las fotos.");
     } finally {
         labelOriginal.textContent = "Añadir Foto 📸";
@@ -399,25 +402,48 @@ inputSubirFoto.addEventListener("change", async (e) => {
     }
 });
 
-function transformarABase64(file) {
+function transformarYComprimirABase64(file, maxWidth = 1200, quality = 0.7) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Forzamos codificación JPEG ligera
+                const dataUrl = canvas.toDataURL("image/jpeg", quality);
+                resolve(dataUrl);
+            };
+            img.onerror = (err) => reject(err);
+        };
         reader.onerror = (error) => reject(error);
     });
 }
 
 // ACCIÓN: ELIMINAR FOTO ESPECÍFICA
-async function eliminarFotoEspecifica(fotoBase64) {
+async function eliminarFotoEspecifica(fotoDocId) {
     try {
-        const fotosDocRef = doc(db, "viajes_fotos", viajeId);
-        await updateDoc(fotosDocRef, {
-            fotos: arrayRemove(fotoBase64)
-        });
+        // Apuntamos directamente al documento de la foto dentro de la subcolección y lo eliminamos
+        const fotoDocRef = doc(db, "viajes", viajeId, "fotos", fotoDocId);
+        await deleteDoc(fotoDocRef);
+        
         await cargarFotosDelViaje();
     } catch (error) {
-        console.error("Error al eliminar la foto de Firestore:", error);
+        console.error("Error al eliminar el documento de la foto:", error);
         mostrarMensajePantalla("No se pudo eliminar la foto.");
     }
 }
