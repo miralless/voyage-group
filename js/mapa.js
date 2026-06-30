@@ -9,7 +9,7 @@ const viajeTitulo = document.getElementById("viaje-titulo");
 const viajeFechas = document.getElementById("viaje-fechas");
 const viajeCiudadCompleta = document.getElementById("viaje-ciudad-completa");
 const galeriaFotos = document.getElementById("galeria-fotos");
-const btnAbandonar = document.getElementById("btn-eliminar-viaje"); // Mapeado a tu id de botón actual para que no rompa el HTML
+const btnAbandonar = document.getElementById("btn-eliminar-viaje"); 
 const inputSubirFoto = document.getElementById("input-subir-foto");
 
 // Elementos del Dialog de Zoom
@@ -17,193 +17,62 @@ const zoomModal = document.getElementById("zoom-modal");
 const zoomImg = document.getElementById("zoom-img");
 const btnCloseZoom = document.getElementById("btn-close-zoom");
 
-// Elementos del Dialog de Confirmación de Abandono (Reutilizando tus modales)
+// Elementos del Dialog de Confirmación de Abandono
 const borrarModal = document.getElementById("confirmar-borrado-modal");
 const btnCancelarBorrado = document.getElementById("btn-cancelar-borrado");
 const btnConfirmarBorrado = document.getElementById("btn-confirmar-borrado");
 
+// Elementos del Dialog de Confirmación de Foto
 const fotoModal = document.getElementById("confirmar-foto-modal");
 const btnCancelarFoto = document.getElementById("btn-cancelar-foto");
 const btnConfirmarFoto = document.getElementById("btn-confirmar-foto");
 
-// Variables globales de los nuevos elementos
+// 🆕 Elementos de nuevos Modales (Reemplazos de alerts y prompts nativos)
+const alertModal = document.getElementById("alert-modal");
+const alertModalTexto = document.getElementById("alert-modal-texto");
+const btnAlertCerrar = document.getElementById("btn-alert-cerrar");
+
+const expulsarModal = document.getElementById("confirmar-expulsar-modal");
+const btnCancelarExpulsar = document.getElementById("btn-cancelar-expulsar");
+const btnConfirmarExpulsar = document.getElementById("btn-confirmar-expulsar");
+const expulsarModalTexto = document.getElementById("expulsar-modal-texto");
+
+const destruirModal = document.getElementById("confirmar-destruir-modal");
+const inputDestruirConfirmacion = document.getElementById("input-destruir-confirmacion");
+const btnCancelarDestruir = document.getElementById("btn-cancelar-destruir");
+const btnConfirmarDestruir = document.getElementById("btn-confirmar-destruir");
+
+// Variables globales de los elementos de administración
 const zonaAdmin = document.getElementById("zona-administrador");
 const btnEliminarGrupoTotal = document.getElementById("btn-eliminar-grupo-total");
-const inputAddMiembroEmail = document.getElementById("input-add-miembro-email");
-const btnAddMiembro = document.getElementById("btn-add-miembro");
 const listaGestionMiembros = document.getElementById("lista-gestion-miembros");
 const selectAddMiembro = document.getElementById("select-add-miembro");
+const btnAddMiembro = document.getElementById("btn-add-miembro");
 
-async function cargarUsuariosDisponiblesParaSelect(participantesGrupo, participantesViaje) {
-    try {
-        selectAddMiembro.innerHTML = '<option value="" disabled selected>Selecciona un miembro...</option>';
-        
-        let usuariosAgregadosAlSelect = 0;
-
-        // Recorremos los usuarios del GRUPO
-        for (const uidUsuario of participantesGrupo) {
-            
-            // 🔍 REGLA DE ORO: Si ya está en el viaje, lo saltamos
-            if (participantesViaje.includes(uidUsuario)) continue;
-
-            // Buscamos los datos de ese miembro específico para poner su @username
-            const userDoc = await getDoc(doc(db, "usuarios", uidUsuario));
-            if (userDoc.exists()) {
-                const userData = userDoc.data();
-                
-                const option = document.createElement("option");
-                option.value = uidUsuario;
-                option.textContent = `@${userData.username}`;
-                selectAddMiembro.appendChild(option);
-                usuariosAgregadosAlSelect++;
-            }
-        }
-
-        if (usuariosAgregadosAlSelect === 0) {
-            selectAddMiembro.innerHTML = '<option value="" disabled>Toda la cuadrilla está en este viaje ✈️</option>';
-        }
-
-    } catch (error) {
-        console.error("Error al filtrar miembros del grupo:", error);
-        selectAddMiembro.innerHTML = '<option value="" disabled>Error al cargar usuarios</option>';
-    }
-}
-
-async function verificarRolCreador(grupoData, idDelGrupo, participantesDelViaje) {
-    grupoActivoId = idDelGrupo; 
-
-    if (grupoData.creador === currentUserId) {
-        zonaAdmin.style.display = "block"; 
-        
-        // 👇 CAMBIO: Renderizamos la lista con los usuarios que van al VIAJE
-        await renderizarListaGestionMiembros(participantesDelViaje);
-        
-        // El select se queda igual (miembros del grupo que NO están en el viaje)
-        await cargarUsuariosDisponiblesParaSelect(grupoData.participantes, participantesDelViaje);
-    } else {
-        zonaAdmin.style.display = "none";
-    }
-}
-
-// Renderiza la lista de miembros con el botón de "Expulsar" al lado
-async function renderizarListaGestionMiembros(participantesViajeIds) {
-    listaGestionMiembros.innerHTML = "";
-    
-    for (const uid of participantesViajeIds) {
-        // Ignoramos al propio creador para que no se auto-saque del viaje en esta lista
-        if (uid === currentUserId) continue; 
-
-        const userDoc = await getDoc(doc(db, "usuarios", uid));
-        if (userDoc.exists()) {
-            const userData = userDoc.data();
-            
-            const li = document.createElement("li");
-            li.style = "display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #374151;";
-            li.innerHTML = `
-                <span>${userData.nombreCompleto}</span>
-                <button class="btn-expulsar" data-uid="${uid}" style="background: transparent; border: 1px solid #f87171; color: #f87171; padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer;">Sacar del viaje</button>
-            `;
-            
-            // Evento para el botón sacar miembro del viaje
-            li.querySelector(".btn-expulsar").addEventListener("click", async (e) => {
-                const uidAExpulsar = e.target.getAttribute("data-uid");
-                if (confirm(`¿Seguro que quieres quitar a @${userData.username} de este viaje?`)) {
-                    await expulsarMiembroDelViaje(uidAExpulsar);
-                }
-            });
-
-            listaGestionMiembros.appendChild(li);
-        }
-    }
-}
-
-// 1. ACCIÓN: EXPULSAR MIEMBRO
-async function expulsarMiembroDelViaje(uidMiembro) {
-    try {
-        const viajeRef = doc(db, "viajes", viajeId);
-        
-        // Lo sacamos únicamente del array de participantes de este viaje
-        await updateDoc(viajeRef, {
-            participantes: arrayRemove(uidMiembro)
-        });
-
-        alert("El usuario ha sido retirado de este viaje.");
-        window.location.reload(); // Recargamos para actualizar las listas y fotos
-    } catch (error) {
-        console.error("Error al retirar del viaje:", error);
-        alert("Error al intentar quitar al miembro del viaje.");
-    }
-}
-
-// 2. ACCIÓN: AÑADIR MIEMBRO POR EMAIL
-btnAddMiembro.addEventListener("click", async () => {
-    const targetUid = selectAddMiembro.value; 
-    
-    if (!targetUid) {
-        alert("Por favor, selecciona primero un miembro de la lista.");
-        return;
-    }
-
-    try {
-        btnAddMiembro.textContent = "Añadiendo...⏳";
-        btnAddMiembro.disabled = true;
-
-        // ⚠️ CAMBIO: Lo añadimos a la colección 'viajes', al documento de este viajeId
-        await updateDoc(doc(db, "viajes", viajeId), {
-            participantes: arrayUnion(targetUid)
-        });
-
-        alert("¡Miembro añadido al viaje con éxito!");
-        window.location.reload(); 
-
-    } catch (error) {
-        console.error("Error al añadir miembro al viaje:", error);
-        alert("Ocurrió un error al procesar la solicitud.");
-        btnAddMiembro.textContent = "Añadir";
-        btnAddMiembro.disabled = false;
-    }
-});
-
-// 3. ACCIÓN: ELIMINAR EL GRUPO POR COMPLETO (Borrado total)
-btnEliminarGrupoTotal.addEventListener("click", async () => {
-    const confirmacion1 = confirm("¡CUIDADO! ¿Estás completamente seguro de que quieres ELIMINAR todo el grupo? Esta acción es irreversible.");
-    if (!confirmacion1) return;
-
-    const confirmacion2 = prompt("Para confirmar la destrucción total, escribe la palabra: BORRAR");
-    if (confirmacion2 !== "BORRAR") {
-        alert("Confirmación incorrecta. Operación cancelada.");
-        return;
-    }
-
-    try {
-        btnEliminarGrupoTotal.textContent = "Destruyendo grupo... 🧨";
-        btnEliminarGrupoTotal.disabled = true;
-
-        // Borramos el documento del grupo de Firestore
-        await deleteDoc(doc(db, "grupos", grupoActivoId));
-
-        // Limpiamos los rastros locales de las variables de sesión
-        localStorage.removeItem("grupoActivoId");
-        localStorage.removeItem("viajeActivoId");
-
-        alert("El grupo ha sido eliminado permanentemente.");
-        window.location.href = "app.html"; // Regresa al dashboard general
-
-    } catch (error) {
-        console.error("Error al suprimir el grupo:", error);
-        alert("Las reglas de Firebase impidieron el borrado o hubo un fallo de red.");
-        btnEliminarGrupoTotal.textContent = "🔥 Eliminar Grupo Permanentemente";
-        btnEliminarGrupoTotal.disabled = false;
-    }
-});
-
-// Variables globales temporales
+// Variables de estado temporales
 let fotoSeleccionadaParaBorrar = null;
-let currentUserId = null; // 👈 Guardamos el UID del usuario logueado para sacarlo del array
+let usuarioSeleccionadoParaExpulsar = null;
+let currentUserId = null; 
 let grupoActivoId = null;
 
 // Recuperar ID del LocalStorage
 const viajeId = localStorage.getItem("viajeActivoId");
+
+// 🆕 Función para lanzar avisos en pantalla en vez de usar 'alert()'
+function mostrarMensajePantalla(mensaje, recargarAlCerrar = false) {
+    alertModalTexto.textContent = mensaje;
+    alertModal.showModal();
+    
+    // Configurar evento único de cierre
+    const cerrarHandler = () => {
+        alertModal.close();
+        btnAlertCerrar.removeEventListener("click", cerrarHandler);
+        if (recargarAlCerrar) {
+            window.location.reload();
+        }
+    };
+    btnAlertCerrar.addEventListener("click", cerrarHandler);
+}
 
 // GUARDIÁN DE SEGURIDAD
 onAuthStateChanged(auth, async (user) => {
@@ -212,7 +81,7 @@ onAuthStateChanged(auth, async (user) => {
     } else if (!viajeId) {
         window.location.href = "grupo.html";
     } else {
-        currentUserId = user.uid; // Asignamos el ID globalmente
+        currentUserId = user.uid; 
         await cargarDatosBaseUsuario(user.uid);
         await cargarDatosDelViaje();
     }
@@ -247,7 +116,6 @@ async function cargarDatosDelViaje() {
         const viajeData = viajeSnap.data();
         viajeTitulo.textContent = viajeData.nombreViaje || viajeData.ciudad;
 
-        // Guardamos los participantes que ya están subidos al viaje actual
         const participantesDelViaje = viajeData.participantes || []; 
 
         const formatearFecha = (f) => f ? f.split("-").reverse().join("/") : "";
@@ -260,7 +128,6 @@ async function cargarDatosDelViaje() {
             const grupoSnap = await getDoc(grupoRef);
             
             if (grupoSnap.exists()) {
-                // 👇 CAMBIO: Ahora enviamos también los participantes del viaje para poder restarlos
                 await verificarRolCreador(grupoSnap.data(), grupoIdDelViaje, participantesDelViaje);
             }
         }
@@ -271,6 +138,179 @@ async function cargarDatosDelViaje() {
         console.error("Error al estructurar los datos del viaje:", error);
     }
 }
+
+async function cargarUsuariosDisponiblesParaSelect(participantesGrupo, participantesViaje) {
+    try {
+        selectAddMiembro.innerHTML = '<option value="" disabled selected>Selecciona un miembro...</option>';
+        let usuariosAgregadosAlSelect = 0;
+
+        for (const uidUsuario of participantesGrupo) {
+            if (participantesViaje.includes(uidUsuario)) continue;
+
+            const userDoc = await getDoc(doc(db, "usuarios", uidUsuario));
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                const option = document.createElement("option");
+                option.value = uidUsuario;
+                option.textContent = `@${userData.username}`;
+                selectAddMiembro.appendChild(option);
+                usuariosAgregadosAlSelect++;
+            }
+        }
+
+        if (usuariosAgregadosAlSelect === 0) {
+            selectAddMiembro.innerHTML = '<option value="" disabled>Toda la cuadrilla está en este viaje ✈️</option>';
+        }
+
+    } catch (error) {
+        console.error("Error al filtrar miembros del grupo:", error);
+        selectAddMiembro.innerHTML = '<option value="" disabled>Error al cargar usuarios</option>';
+    }
+}
+
+async function verificarRolCreador(grupoData, idDelGrupo, participantesDelViaje) {
+    grupoActivoId = idDelGrupo; 
+
+    if (grupoData.creador === currentUserId) {
+        zonaAdmin.style.display = "block"; 
+        await renderizarListaGestionMiembros(participantesDelViaje);
+        await cargarUsuariosDisponiblesParaSelect(grupoData.participantes, participantesDelViaje);
+    } else {
+        zonaAdmin.style.display = "none";
+    }
+}
+
+// Renderiza la lista de miembros con el modal de confirmación en pantalla
+async function renderizarListaGestionMiembros(participantesViajeIds) {
+    listaGestionMiembros.innerHTML = "";
+    
+    for (const uid of participantesViajeIds) {
+        if (uid === currentUserId) continue; 
+
+        const userDoc = await getDoc(doc(db, "usuarios", uid));
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            
+            const li = document.createElement("li");
+            li.style = "display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #374151;";
+            li.innerHTML = `
+                <span>${userData.nombreCompleto || userData.username}</span>
+                <button class="btn-expulsar" data-uid="${uid}" style="background: transparent; border: 1px solid #f87171; color: #f87171; padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer;">Sacar del viaje</button>
+            `;
+            
+            li.querySelector(".btn-expulsar").addEventListener("click", (e) => {
+                usuarioSeleccionadoParaExpulsar = e.target.getAttribute("data-uid");
+                expulsarModalTexto.textContent = `¿Seguro que quieres quitar a @${userData.username} de este viaje?`;
+                expulsarModal.showModal();
+            });
+
+            listaGestionMiembros.appendChild(li);
+        }
+    }
+}
+
+// Manejadores de eventos del Modal de Expulsión
+btnCancelarExpulsar.addEventListener("click", () => {
+    expulsarModal.close();
+    usuarioSeleccionadoParaExpulsar = null;
+});
+
+btnConfirmarExpulsar.addEventListener("click", async () => {
+    if (!usuarioSeleccionadoParaExpulsar) return;
+    expulsarModal.close();
+    await expulsarMiembroDelViaje(usuarioSeleccionadoParaExpulsar);
+    usuarioSeleccionadoParaExpulsar = null;
+});
+
+// 1. ACCIÓN: EXPULSAR MIEMBRO REAL
+async function expulsarMiembroDelViaje(uidMiembro) {
+    try {
+        const viajeRef = doc(db, "viajes", viajeId);
+        await updateDoc(viajeRef, {
+            participantes: arrayRemove(uidMiembro)
+        });
+        mostrarMensajePantalla("El usuario ha sido retirado de este viaje.", true);
+    } catch (error) {
+        console.error("Error al retirar del viaje:", error);
+        mostrarMensajePantalla("Error al intentar quitar al miembro del viaje.");
+    }
+}
+
+// 2. ACCIÓN: AÑADIR MIEMBRO POR SELECT
+btnAddMiembro.addEventListener("click", async () => {
+    const targetUid = selectAddMiembro.value; 
+    
+    if (!targetUid) {
+        mostrarMensajePantalla("Por favor, selecciona primero un miembro de la lista.");
+        return;
+    }
+
+    try {
+        btnAddMiembro.textContent = "Añadiendo...⏳";
+        btnAddMiembro.disabled = true;
+
+        await updateDoc(doc(db, "viajes", viajeId), {
+            participantes: arrayUnion(targetUid)
+        });
+
+        mostrarMensajePantalla("¡Miembro añadido al viaje con éxito!", true);
+
+    } catch (error) {
+        console.error("Error al añadir miembro al viaje:", error);
+        mostrarMensajePantalla("Ocurrió un error al procesar la solicitud.");
+        btnAddMiembro.textContent = "Añadir";
+        btnAddMiembro.disabled = false;
+    }
+});
+
+// 3. ACCIÓN: ELIMINAR EL VIAJE POR COMPLETO (Solo Creador)
+const btnEliminarViajeTotal = document.getElementById("btn-eliminar-grupo-total"); // Mantén el id antiguo si no lo has cambiado en el HTML
+
+btnEliminarViajeTotal.addEventListener("click", () => {
+    inputDestruirConfirmacion.value = ""; // Limpiamos la caja de texto
+    destruirModal.showModal();
+});
+
+btnCancelarDestruir.addEventListener("click", () => {
+    destruirModal.close();
+});
+
+btnConfirmarDestruir.addEventListener("click", async () => {
+    const palabraIntroducida = inputDestruirConfirmacion.value.trim();
+
+    if (palabraIntroducida !== "BORRAR") {
+        destruirModal.close();
+        mostrarMensajePantalla("Confirmación incorrecta. Operación cancelada.");
+        return;
+    }
+
+    try {
+        destruirModal.close();
+        btnEliminarViajeTotal.textContent = "Eliminando viaje... 🧨";
+        btnEliminarViajeTotal.disabled = true;
+
+        // CAMBIO CLAVE: Ahora borra el documento de la colección "viajes" usando el viajeActivoId
+        await deleteDoc(doc(db, "viajes", viajeId));
+
+        // Limpiamos únicamente el ID del viaje activo del almacenamiento local
+        localStorage.removeItem("viajeActivoId");
+
+        // Lanzamos el modal de éxito, y al cerrar volvemos a la pantalla del grupo (grupo.html)
+        // ya que el grupo sigue existiendo y solo ha desaparecido este viaje.
+        alertModalTexto.textContent = "El viaje ha sido eliminado permanentemente.";
+        alertModal.showModal();
+        
+        btnAlertCerrar.addEventListener("click", () => {
+            window.location.href = "grupo.html";
+        });
+
+    } catch (error) {
+        console.error("Error al suprimir el viaje:", error);
+        mostrarMensajePantalla("Las reglas de Firebase impidieron el borrado o hubo un fallo de red.");
+        btnEliminarViajeTotal.textContent = "Eliminar Viaje Permanentemente";
+        btnEliminarViajeTotal.disabled = false;
+    }
+});
 
 // Renderizar las fotos y configurar eventos (Zoom y Eliminar Individual)
 async function cargarFotosDelViaje() {
@@ -319,9 +359,7 @@ async function cargarFotosDelViaje() {
     }
 }
 
-// ==========================================================================
 // ACCIÓN: ACCIÓN DE AÑADIR/SUBIR FOTOS NUEVAS
-// ==========================================================================
 inputSubirFoto.addEventListener("change", async (e) => {
     const archivos = e.target.files;
     if (!archivos || archivos.length === 0) return;
@@ -354,7 +392,7 @@ inputSubirFoto.addEventListener("change", async (e) => {
 
     } catch (error) {
         console.error("Error al subir las imágenes a Firebase:", error);
-        alert("Hubo un fallo al intentar guardar las fotos.");
+        mostrarMensajePantalla("Hubo un fallo al intentar guardar las fotos.");
     } finally {
         labelOriginal.textContent = "Añadir Foto 📸";
         labelOriginal.style.pointerEvents = "auto";
@@ -370,9 +408,7 @@ function transformarABase64(file) {
     });
 }
 
-// ==========================================================================
 // ACCIÓN: ELIMINAR FOTO ESPECÍFICA
-// ==========================================================================
 async function eliminarFotoEspecifica(fotoBase64) {
     try {
         const fotosDocRef = doc(db, "viajes_fotos", viajeId);
@@ -382,17 +418,15 @@ async function eliminarFotoEspecifica(fotoBase64) {
         await cargarFotosDelViaje();
     } catch (error) {
         console.error("Error al eliminar la foto de Firestore:", error);
-        alert("No se pudo eliminar la foto.");
+        mostrarMensajePantalla("No se pudo eliminar la foto.");
     }
 }
 
-// Modales del zoom
+// Cierre de Modales de Zoom
 btnCloseZoom.addEventListener("click", () => { zoomModal.close(); zoomImg.src = ""; });
 zoomModal.addEventListener("click", (e) => { if (e.target === zoomModal) { zoomModal.close(); zoomImg.src = ""; } });
 
-// ==========================================================================
-// NUEVA LÓGICA: ABANDONAR EL VIAJE ACTUAL (EN LUGAR DE BORRADO TOTAL)
-// ==========================================================================
+// ABANDONAR EL VIAJE ACTUAL
 btnAbandonar.addEventListener("click", () => {
     borrarModal.showModal();
 });
@@ -407,7 +441,6 @@ borrarModal.addEventListener("click", (e) => {
     }
 });
 
-// Ejecución del abandono al confirmar en el Dialog modal
 btnConfirmarBorrado.addEventListener("click", async () => {
     if (!currentUserId || !viajeId) return;
 
@@ -418,12 +451,10 @@ btnConfirmarBorrado.addEventListener("click", async () => {
 
         const viajeRef = doc(db, "viajes", viajeId);
 
-        // Sacamos de forma atómica nuestro uid del array 'participantes' de este viaje
         await updateDoc(viajeRef, {
             participantes: arrayRemove(currentUserId)
         });
 
-        // Limpiamos los rastros locales del viaje actual
         localStorage.removeItem("viajeActivoId");
         localStorage.removeItem("viajeActivoCiudad");
 
@@ -432,7 +463,7 @@ btnConfirmarBorrado.addEventListener("click", async () => {
         
     } catch (error) {
         console.error("Error al intentar abandonar el viaje:", error);
-        alert("Hubo un fallo al intentar salir del viaje.");
+        mostrarMensajePantalla("Hubo un fallo al intentar salir del viaje.");
         
         btnConfirmarBorrado.textContent = "Confirmar";
         btnConfirmarBorrado.disabled = false;
@@ -466,7 +497,7 @@ btnConfirmarFoto.addEventListener("click", async () => {
         
     } catch (error) {
         console.error("Error al confirmar borrado de foto:", error);
-        alert("No se pudo eliminar la foto.");
+        mostrarMensajePantalla("No se pudo eliminar la foto.");
     } finally {
         btnConfirmarFoto.textContent = "Eliminar";
         btnConfirmarFoto.disabled = false;

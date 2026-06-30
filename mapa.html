@@ -146,8 +146,8 @@
             cursor: pointer; 
         }
 
-        /* Estilos para el Modal de Confirmación de Borrado */
-        #confirmar-borrado-modal {
+        /* Estilos base para los modales compartidos */
+        dialog {
             border: 1px solid #374151;
             background: #111827; /* Fondo gris oscuro */
             color: white;
@@ -158,60 +158,33 @@
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
             outline: none;
         }
-        #confirmar-borrado-modal::backdrop {
+
+        dialog::backdrop {
             background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(4px);
         }
 
-        #confirmar-foto-modal {
-            border: 1px solid #374151;
-            background: #111827; /* Fondo gris oscuro */
-            color: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            max-width: 85vw;
-            width: 75%;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-            outline: none;
-        }
-        #confirmar-foto-modal::backdrop {
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(4px);
-        }
-
-
-        .modal-borrado-container h3 {
+        /* Reutilizamos las clases que ya tenías para el contenedor */
+        .modal-contenedor h3 {
             margin-top: 0;
             font-size: 1.2rem;
+            margin-bottom: 0.5rem;
         }
-        .modal-borrado-container p {
+
+        .modal-contenedor p {
             color: #9ca3af;
             font-size: 0.9rem;
             line-height: 1.4;
             margin-bottom: 1.5rem;
-        }
-        .modal-borrado-acciones {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .modal-foto-container h3 {
             margin-top: 0;
-            font-size: 1.2rem;
         }
-        .modal-foto-container p {
-            color: #9ca3af;
-            font-size: 0.9rem;
-            line-height: 1.4;
-            margin-bottom: 1.5rem;
-        }
-        .modal-foto-acciones {
+
+        .modal-acciones {
             display: flex;
             gap: 1rem;
         }
 
-
-
+        /* Y los estilos de botones que ya funcionaban */
         .btn-modal-cancelar {
             flex: 1;
             background: #4b5563;
@@ -221,7 +194,9 @@
             border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
+            font-size: 0.9rem;
         }
+
         .btn-modal-eliminar {
             flex: 1;
             background: #ef4444;
@@ -231,17 +206,23 @@
             border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-modal-primario {
+            flex: 1;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
         }
         
         .btn-volver { background: #3b82f6; width: 100%; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 1.5rem; height: 40px; }
         .btn-eliminar { background: #ef4444; width: 100%; color: white; margin-top: 1rem; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; float: right; height: 40px; }
-
-        /* Estilos para el Modal de Zoom (<dialog>) */
-        #zoom-modal { border: none; background: transparent; padding: 0; max-width: 90vw; max-height: 90vh; outline: none; }
-        #zoom-modal::backdrop { background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px); }
-        .zoom-img-container { position: relative; display: flex; justify-content: center; align-items: center; }
-        #zoom-img { max-width: 100%; max-height: 85vh; border-radius: 8px; object-fit: contain; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-        .btn-close-zoom { position: absolute; top: -40px; right: 0; background: transparent; color: white; border: none; font-size: 2rem; cursor: pointer; }
 
         .app-footer {
             position: fixed;
@@ -335,8 +316,26 @@
         }
 
         #nav-username {
-    font-style: italic;
-}
+            font-style: italic;
+        }
+
+        .hr-divider {
+            border: 0;
+            border-top: 1px solid #374151;
+            margin: 1.5rem 0;
+        }
+
+        .input-text-dark {
+            width: 100%;
+            padding: 0.75rem;
+            margin: 1rem 0;
+            background: #111827;
+            color: white;
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -379,7 +378,7 @@
                 <div style="display: flex; gap: 0.5rem;">
                     <select id="select-add-miembro" style="flex: 1; width: 10rem; padding: 0.5rem; border-radius: 6px; border: 1px solid #4b5563; background: #111827; color: white;">
                         <option value="" disabled selected>Cargando usuarios disponibles...</option>
-                    </select>
+                    } </select>
                     <button id="btn-add-miembro" style="background: #2563eb; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">Añadir</button>
                 </div>
             </div>
@@ -390,7 +389,7 @@
                     </ul>
             </div>
 
-            <hr style="border-color: #374151; margin: 1.5rem 0;">
+            <hr class="hr-divider">
 
             <button id="btn-eliminar-grupo-total" style="background: #ef4444; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%;">
                 Eliminar Viaje Permanentemente
@@ -418,26 +417,56 @@
     </footer>
 
     <dialog id="confirmar-borrado-modal">
-        <div class="modal-borrado-container">
+        <div class="modal-contenedor">
             <h3>¿Abandonar viaje?</h3>
-            
             <p>Esta acción te eliminará de la lista de participantes. Dejarás de tener acceso a este viaje y a sus recuerdos compartidos.</p>
-            
-            <div class="modal-borrado-acciones">
+            <div class="modal-acciones">
                 <button id="btn-cancelar-borrado" class="btn-modal-cancelar">Cancelar</button>
-                
                 <button id="btn-confirmar-borrado" class="btn-modal-eliminar">Abandonar</button>
             </div>
         </div>
     </dialog>
 
     <dialog id="confirmar-foto-modal">
-        <div class="modal-borrado-container">
+        <div class="modal-contenedor">
             <h3>¿Eliminar esta foto?</h3>
             <p>La imagen se borrará permanentemente del álbum compartido de la cuadrilla.</p>
-            <div class="modal-borrado-acciones">
+            <div class="modal-acciones">
                 <button id="btn-cancelar-foto" class="btn-modal-cancelar">Cancelar</button>
                 <button id="btn-confirmar-foto" class="btn-modal-eliminar">Eliminar</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="alert-modal">
+        <div class="modal-contenedor">
+            <h3>Aviso</h3>
+            <p id="alert-modal-texto"></p>
+            <div class="modal-acciones">
+                <button id="btn-alert-cerrar" class="btn-modal-primario">Aceptar</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="confirmar-expulsar-modal">
+        <div class="modal-contenedor">
+            <h3>Confirmar acción</h3>
+            <p id="expulsar-modal-texto">¿Seguro que quieres quitar a este usuario del viaje?</p>
+            <div class="modal-acciones">
+                <button id="btn-cancelar-expulsar" class="btn-modal-cancelar">Cancelar</button>
+                <button id="btn-confirmar-expulsar" class="btn-modal-eliminar">Sacar</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="confirmar-destruir-modal">
+        <div class="modal-contenedor">
+            <h3>⚠️ BORRADO PERMANENTE</h3>
+            <p>Esta acción es irreversible y borrará el viaje y todas sus fotos para todos los participantes. Para confirmar, escribe la palabra <strong>BORRAR</strong> abajo:</p>
+            <input type="text" id="input-destruir-confirmacion" class="input-text-dark" placeholder="Escribe BORRAR">
+            <div class="modal-acciones">
+                <button id="btn-cancelar-destruir" class="btn-modal-cancelar">Cancelar</button>
+                <button id="btn-confirmar-destruir" class="btn-modal-eliminar">Eliminar Viaje</button>
             </div>
         </div>
     </dialog>
