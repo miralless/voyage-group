@@ -1,5 +1,5 @@
 import { db, auth } from "./firebase-config.js";
-import { doc, getDoc, deleteDoc, updateDoc, arrayUnion, arrayRemove, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { doc, getDoc, deleteDoc, updateDoc, arrayUnion, arrayRemove, setDoc, collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Capturar elementos del DOM

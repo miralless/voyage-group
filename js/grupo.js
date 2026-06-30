@@ -182,22 +182,25 @@ async function consultarYRenderizarViajes() {
             // Si el viaje tiene registrados sus participantes y el usuario actual NO está incluido, 
             // nos saltamos el viaje por completo (no se añade al mapa ni al contenedor visual)
             if (viajeData.participantes && !viajeData.participantes.includes(currentUserId)) {
-                continue; // Salta al siguiente viaje del bucle sin ejecutar lo de abajo
+                continue; 
             }
 
             // Marcamos que el usuario sí tiene al menos un viaje visible
             hayViajesVisibles = true;
 
-            // 1. ¡NUEVO! Vamos a buscar las fotos a la colección independiente usando el ID del viaje
+            // 1. 🔥 CORREGIDO: Buscamos las fotos en la SUBCOLECCIÓN 'fotos' dentro del viaje
             let fotosDelViaje = [];
             try {
-                const fotosDocRef = doc(db, "viajes_fotos", viajeId);
-                const fotosDocSnap = await getDoc(fotosDocRef);
-                if (fotosDocSnap.exists()) {
-                    fotosDelViaje = fotosDocSnap.data().fotos || [];
-                }
+                const fotosSubcoleccionRef = collection(db, "viajes", viajeId, "fotos");
+                const fotosSnap = await getDocs(fotosSubcoleccionRef);
+                
+                fotosSnap.forEach(fotoDoc => {
+                    if (fotoDoc.data().url) {
+                        fotosDelViaje.push(fotoDoc.data().url);
+                    }
+                });
             } catch (err) {
-                console.error(`Error al traer las fotos del viaje ${viajeId}:`, err);
+                console.error(`Error al traer las fotos de la subcolección del viaje ${viajeId}:`, err);
             }
 
             // Formatear fechas para mostrar en la tarjeta
@@ -586,20 +589,25 @@ btnSubmitTrip.addEventListener("click", async (e) => {
         const viajeDocRef = await addDoc(collection(db, "viajes"), nuevoViaje);
         const nuevoViajeId = viajeDocRef.id; // Este es el ID único del viaje
 
-        // 4. ¡NUEVO! Guardamos las fotos en una colección aparte usando el MISMO ID del viaje
+        // 4. 🔥 CORREGIDO: Guardamos las fotos de manera individual en la subcolección interna
         if (arrayFotosBase64.length > 0) {
-            btnSubmitTrip.textContent = "Subiendo fotos separadas...";
-            await setDoc(doc(db, "viajes_fotos", nuevoViajeId), {
-                fotos: arrayFotosBase64,
-                viajeId: nuevoViajeId,
-                grupoId: grupoActivoId
-            });
+            btnSubmitTrip.textContent = "Subiendo fotos a la galería...";
+            
+            const fotosSubcoleccionRef = collection(db, "viajes", nuevoViajeId, "fotos");
+            
+            for (const fotoBase64 of arrayFotosBase64) {
+                await addDoc(fotosSubcoleccionRef, {
+                    url: fotoBase64,
+                    subidaPor: currentUserId,
+                    fechaSubida: Date.now()
+                });
+            }
         }
 
         limpiarFormularioModal();
         tripModal.close();
 
-        await mostrarAlerta(`¡Viaje "${nombreViajeTexto}" registrado con su silueta perfecta! ✈️🌍`);
+        await mostrarAlerta(`¡Viaje "${nombreViajeTexto}" registrado! ✈️🌍`);
         await consultarYRenderizarViajes();
 
     } catch (error) {
