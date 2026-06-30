@@ -34,61 +34,63 @@ const btnAddMiembro = document.getElementById("btn-add-miembro");
 const listaGestionMiembros = document.getElementById("lista-gestion-miembros");
 const selectAddMiembro = document.getElementById("select-add-miembro");
 
-async function cargarUsuariosDisponiblesParaSelect(participantesActuales) {
+async function cargarUsuariosDisponiblesParaSelect(participantesGrupo, participantesViaje) {
     try {
-        selectAddMiembro.innerHTML = '<option value="" disabled selected>Selecciona un usuario...</option>';
-        
-        // Traemos todos los usuarios registrados en la app
-        const usuariosRef = collection(db, "usuarios");
-        const querySnapshot = await getDocs(usuariosRef);
+        selectAddMiembro.innerHTML = '<option value="" disabled selected>Selecciona un miembro...</option>';
         
         let usuariosAgregadosAlSelect = 0;
 
-        const participantesLimpios = participantesActuales.map(id => id.trim());
-        querySnapshot.forEach((usuarioDoc) => {
-            const uidUsuario = usuarioDoc.id.trim();
-            const userData = usuarioDoc.data();
+        // Recorremos los usuarios del GRUPO
+        for (const uidUsuario of participantesGrupo) {
             
-            // 2. Comparamos con el array normalizado
-            if (!participantesLimpios.includes(uidUsuario)) {
+            // 🔍 REGLA DE ORO: Si ya está en el viaje, lo saltamos
+            if (participantesViaje.includes(uidUsuario)) continue;
+
+            // Buscamos los datos de ese miembro específico para poner su @username
+            const userDoc = await getDoc(doc(db, "usuarios", uidUsuario));
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                
                 const option = document.createElement("option");
                 option.value = uidUsuario;
-                option.textContent = `@${userData.username} (${userData.nombreCompleto || userData.email})`;
+                option.textContent = `@${userData.username}`;
                 selectAddMiembro.appendChild(option);
                 usuariosAgregadosAlSelect++;
             }
-        });
+        }
 
         if (usuariosAgregadosAlSelect === 0) {
-            selectAddMiembro.innerHTML = '<option value="" disabled>No hay más usuarios disponibles</option>';
+            selectAddMiembro.innerHTML = '<option value="" disabled>Toda la cuadrilla está en este viaje ✈️</option>';
         }
 
     } catch (error) {
-        console.error("Error al cargar la lista de usuarios para el select:", error);
+        console.error("Error al filtrar miembros del grupo:", error);
         selectAddMiembro.innerHTML = '<option value="" disabled>Error al cargar usuarios</option>';
     }
 }
 
-async function verificarRolCreador(grupoData, idDelGrupo) {
+async function verificarRolCreador(grupoData, idDelGrupo, participantesDelViaje) {
     grupoActivoId = idDelGrupo; 
 
     if (grupoData.creador === currentUserId) {
         zonaAdmin.style.display = "block"; 
-        await renderizarListaGestionMiembros(grupoData.participantes);
         
-        // 👇 LLAMADA NUEVA: Rellenamos el select con los usuarios que no están en el grupo
-        await cargarUsuariosDisponiblesParaSelect(grupoData.participantes);
+        // 👇 CAMBIO: Renderizamos la lista con los usuarios que van al VIAJE
+        await renderizarListaGestionMiembros(participantesDelViaje);
+        
+        // El select se queda igual (miembros del grupo que NO están en el viaje)
+        await cargarUsuariosDisponiblesParaSelect(grupoData.participantes, participantesDelViaje);
     } else {
         zonaAdmin.style.display = "none";
     }
 }
 
 // Renderiza la lista de miembros con el botón de "Expulsar" al lado
-async function renderizarListaGestionMiembros(participantesIds) {
+async function renderizarListaGestionMiembros(participantesViajeIds) {
     listaGestionMiembros.innerHTML = "";
     
-    for (const uid of participantesIds) {
-        // Ignoramos al propio creador para que no se auto-expulse de la lista
+    for (const uid of participantesViajeIds) {
+        // Ignoramos al propio creador para que no se auto-saque del viaje en esta lista
         if (uid === currentUserId) continue; 
 
         const userDoc = await getDoc(doc(db, "usuarios", uid));
@@ -98,15 +100,15 @@ async function renderizarListaGestionMiembros(participantesIds) {
             const li = document.createElement("li");
             li.style = "display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #374151;";
             li.innerHTML = `
-                <span>@${userData.username} (${userData.nombreCompleto || userData.email})</span>
-                <button class="btn-expulsar" data-uid="${uid}" style="background: transparent; border: 1px solid #f87171; color: #f87171; padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer;">Expulsar</button>
+                <span>${userData.nombreCompleto}</span>
+                <button class="btn-expulsar" data-uid="${uid}" style="background: transparent; border: 1px solid #f87171; color: #f87171; padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer;">Sacar del viaje</button>
             `;
             
-            // Evento para el botón expulsar miembro
+            // Evento para el botón sacar miembro del viaje
             li.querySelector(".btn-expulsar").addEventListener("click", async (e) => {
                 const uidAExpulsar = e.target.getAttribute("data-uid");
-                if (confirm(`¿Seguro que quieres expulsar a @${userData.username} del grupo?`)) {
-                    await expulsarMiembro(uidAExpulsar);
+                if (confirm(`¿Seguro que quieres quitar a @${userData.username} de este viaje?`)) {
+                    await expulsarMiembroDelViaje(uidAExpulsar);
                 }
             });
 
@@ -116,35 +118,29 @@ async function renderizarListaGestionMiembros(participantesIds) {
 }
 
 // 1. ACCIÓN: EXPULSAR MIEMBRO
-async function expulsarMiembro(uidMiembro) {
+async function expulsarMiembroDelViaje(uidMiembro) {
     try {
-        const grupoRef = doc(db, "grupos", grupoActivoId);
+        const viajeRef = doc(db, "viajes", viajeId);
         
-        // Lo sacamos del array de participantes del grupo
-        await updateDoc(grupoRef, {
+        // Lo sacamos únicamente del array de participantes de este viaje
+        await updateDoc(viajeRef, {
             participantes: arrayRemove(uidMiembro)
         });
 
-        // También lo quitamos de su lista de grupos en su perfil personal
-        const usuarioRef = doc(db, "usuarios", uidMiembro);
-        await updateDoc(usuarioRef, {
-            grupos: arrayRemove(grupoActivoId)
-        });
-
-        alert("Miembro expulsado del grupo.");
-        window.location.reload(); // Recargamos para actualizar el mapa y contadores
+        alert("El usuario ha sido retirado de este viaje.");
+        window.location.reload(); // Recargamos para actualizar las listas y fotos
     } catch (error) {
-        console.error("Error al expulsar:", error);
-        alert("Error al intentar expulsar al miembro.");
+        console.error("Error al retirar del viaje:", error);
+        alert("Error al intentar quitar al miembro del viaje.");
     }
 }
 
 // 2. ACCIÓN: AÑADIR MIEMBRO POR EMAIL
 btnAddMiembro.addEventListener("click", async () => {
-    const targetUid = selectAddMiembro.value; // Obtenemos directamente el UID del usuario elegido
+    const targetUid = selectAddMiembro.value; 
     
     if (!targetUid) {
-        alert("Por favor, selecciona primero un usuario de la lista.");
+        alert("Por favor, selecciona primero un miembro de la lista.");
         return;
     }
 
@@ -152,21 +148,16 @@ btnAddMiembro.addEventListener("click", async () => {
         btnAddMiembro.textContent = "Añadiendo...⏳";
         btnAddMiembro.disabled = true;
 
-        // 1. Metemos el UID en el array del grupo activo
-        await updateDoc(doc(db, "grupos", grupoActivoId), {
+        // ⚠️ CAMBIO: Lo añadimos a la colección 'viajes', al documento de este viajeId
+        await updateDoc(doc(db, "viajes", viajeId), {
             participantes: arrayUnion(targetUid)
         });
 
-        // 2. Registramos el ID del grupo en el historial de grupos del usuario añadido
-        await updateDoc(doc(db, "usuarios", targetUid), {
-            grupos: arrayUnion(grupoActivoId)
-        });
-
-        alert("¡Miembro añadido con éxito!");
-        window.location.reload(); // Recarga para actualizar las listas
+        alert("¡Miembro añadido al viaje con éxito!");
+        window.location.reload(); 
 
     } catch (error) {
-        console.error("Error al añadir miembro desde el select:", error);
+        console.error("Error al añadir miembro al viaje:", error);
         alert("Ocurrió un error al procesar la solicitud.");
         btnAddMiembro.textContent = "Añadir";
         btnAddMiembro.disabled = false;
@@ -255,19 +246,22 @@ async function cargarDatosDelViaje() {
 
         const viajeData = viajeSnap.data();
         viajeTitulo.textContent = viajeData.nombreViaje || viajeData.ciudad;
-        
+
+        // Guardamos los participantes que ya están subidos al viaje actual
+        const participantesDelViaje = viajeData.participantes || []; 
+
         const formatearFecha = (f) => f ? f.split("-").reverse().join("/") : "";
         viajeFechas.textContent = `📅 Del ${formatearFecha(viajeData.fechaIda)} al ${formatearFecha(viajeData.fechaVuelta)}`;
         viajeCiudadCompleta.textContent = `📍 ${viajeData.ciudadCompleta}`;
 
-        // 👇 NUEVA LÓGICA: Obtener el ID del grupo asociado al viaje para validar el creador
         const grupoIdDelViaje = viajeData.grupoId || localStorage.getItem("grupoActivoId");
         if (grupoIdDelViaje) {
             const grupoRef = doc(db, "grupos", grupoIdDelViaje);
             const grupoSnap = await getDoc(grupoRef);
             
             if (grupoSnap.exists()) {
-                await verificarRolCreador(grupoSnap.data(), grupoIdDelViaje);
+                // 👇 CAMBIO: Ahora enviamos también los participantes del viaje para poder restarlos
+                await verificarRolCreador(grupoSnap.data(), grupoIdDelViaje, participantesDelViaje);
             }
         }
 

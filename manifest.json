@@ -1,0 +1,16 @@
+{
+  "short_name": "ViyageGroup",
+  "name": "Gestor de Viajes de Cuadrillas",
+  "icons": [
+    {
+      "src": "iconApp.png",
+      "type": "image/png",
+      "sizes": "775x775"
+    }
+  ],
+  "start_url": "./app.html",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "display": "standalone",
+  "orientation": "portrait"
+}
