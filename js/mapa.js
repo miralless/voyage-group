@@ -226,9 +226,17 @@ btnConfirmarExpulsar.addEventListener("click", async () => {
 async function expulsarMiembroDelViaje(uidMiembro) {
     try {
         const viajeRef = doc(db, "viajes", viajeId);
+        const usuarioRef = doc(db, "usuarios", uidMiembro);
+
+        // Actualización cruzada atómica usando arrayRemove
         await updateDoc(viajeRef, {
             participantes: arrayRemove(uidMiembro)
         });
+
+        await updateDoc(usuarioRef, {
+            viajes: arrayRemove(viajeId) // 💥 Quitamos el viaje del perfil del usuario expulsado
+        });
+
         mostrarMensajePantalla("El usuario ha sido retirado de este viaje.", true);
     } catch (error) {
         console.error("Error al retirar del viaje:", error);
@@ -289,14 +297,30 @@ btnConfirmarDestruir.addEventListener("click", async () => {
         btnEliminarViajeTotal.textContent = "Eliminando viaje... 🧨";
         btnEliminarViajeTotal.disabled = true;
 
-        // CAMBIO CLAVE: Ahora borra el documento de la colección "viajes" usando el viajeActivoId
-        await deleteDoc(doc(db, "viajes", viajeId));
+        // 1. OBTENER PARTICIPANTES ANTES DE BORRAR EL VIAJE
+        const viajeRef = doc(db, "viajes", viajeId);
+        const viajeSnap = await getDoc(viajeRef);
+        
+        if (viajeSnap.exists()) {
+            const viajeData = viajeSnap.data();
+            const participantes = viajeData.participantes || [];
+
+            // 2. DESVINCULAR EL VIAJE DE CADA USUARIO EN PARALELO
+            const promesasUsuarios = participantes.map(async (uidUsuario) => {
+                const usuarioRef = doc(db, "usuarios", uidUsuario);
+                return updateDoc(usuarioRef, {
+                    viajes: arrayRemove(viajeId)
+                });
+            });
+            await Promise.all(promesasUsuarios);
+        }
+
+        // 3. ELIMINAR EL VIAJE DE LA COLECCIÓN
+        await deleteDoc(viajeRef);
 
         // Limpiamos únicamente el ID del viaje activo del almacenamiento local
         localStorage.removeItem("viajeActivoId");
 
-        // Lanzamos el modal de éxito, y al cerrar volvemos a la pantalla del grupo (grupo.html)
-        // ya que el grupo sigue existiendo y solo ha desaparecido este viaje.
         alertModalTexto.textContent = "El viaje ha sido eliminado permanentemente.";
         alertModal.showModal();
         
@@ -511,9 +535,16 @@ btnConfirmarBorrado.addEventListener("click", async () => {
         btnCancelarBorrado.disabled = true;
 
         const viajeRef = doc(db, "viajes", viajeId);
+        const usuarioRef = doc(db, "usuarios", currentUserId);
 
+        // 1. Quitar al usuario de la lista de participantes del viaje
         await updateDoc(viajeRef, {
             participantes: arrayRemove(currentUserId)
+        });
+
+        // 2. 💥 Quitar el viaje del propio perfil del usuario logueado
+        await updateDoc(usuarioRef, {
+            viajes: arrayRemove(viajeId)
         });
 
         localStorage.removeItem("viajeActivoId");
