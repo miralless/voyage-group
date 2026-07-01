@@ -12,68 +12,73 @@
 
     <style>
         :root {
-            --bg-gradient-start: #0f172a; /* Azul noche muy oscuro (Slate 900) */
-            --bg-gradient-end: #1e3a8a;   /* Azul marino profundo (Blue 900) */
-            --primary-color: #2563eb;     /* Azul eléctrico para botones y enlaces (Blue 600) */
-            --primary-hover: #1d4ed8;     /* Azul de interacción (Blue 700) */
+            --bg-gradient-start: #0f172a; 
+            --bg-gradient-end: #1e3a8a;   
+            --primary-color: #2563eb;     
+            --primary-hover: #1d4ed8;     
             --primary-glow: rgba(37, 99, 235, 0.2);
             
-            --text-main: #1e293b;         /* Gris casi negro para títulos */
-            --text-muted: #64748b;        /* Gris suave para subtítulos */
-            --border-color: #cbd5e1;      /* Borde de los inputs */
-            --card-bg: #ffffff;           /* Fondo blanco limpio para la tarjeta */
+            --text-main: #1e293b;         
+            --text-muted: #64748b;        
+            --border-color: #cbd5e1;      
+            --card-bg: #ffffff;           
         }
-        body { background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));; color: white; font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        body { background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end)); color: white; font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; }
         
-        /* Contenedor principal para dejar espacio al Nav y Footer */
         .main-content { flex: 1; max-width: 1000px; width: 100%; margin: 0 auto; padding: 1.5rem; box-sizing: border-box; margin-bottom: 4rem;}
         
-        /* Ajustes de la galería flexible */
         .galeria-contenedor { margin-top: 0; }
+        
+        /* 🔥 MODIFICADO: Fuerza 2 columnas perfectas en móviles y escala en pantallas grandes */
         .grid-fotos { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
-            gap: 1.5rem; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 1rem; 
             margin-top: 1rem; 
-            
-            /* 1. Centra horizontalmente las celdas dentro del contenedor principal */
             justify-content: center;
-            
-            /* 2. Centra los elementos (las fotos) horizontalmente dentro de su propia celda */
             justify-items: center; 
         }
+
+        @media (min-width: 640px) {
+            .grid-fotos {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 1.5rem;
+            }
+        }
         
-        /* Tarjeta contenedora de la foto para que no se corte */
+        /* Tarjeta contenedora de la foto */
         .foto-wrapper { 
             position: relative; 
-            background: transparent;
+            background: rgba(17, 24, 39, 0.5);
             border-radius: 8px; 
             border: 1px solid #374151; 
             overflow: hidden; 
             cursor: pointer; 
-            transition: transform 0.2s; 
+            transition: transform 0.2s, border-color 0.2s; 
             display: flex; 
             align-items: center; 
             justify-content: center;
-            max-height: 35vh;
+            width: 100%;
+            aspect-ratio: 1 / 1; /* Forzamos formato cuadrado para que el grid sea ultra limpio */
         }
 
-        /* El botón de eliminar adaptado a móviles */
+        /* 🔥 MODIFICADO: Resalta la foto seleccionada en el móvil */
+        .foto-wrapper.seleccionada {
+            border-color: #3b82f6;
+            transform: scale(0.98);
+        }
+
+        /* 🔥 MODIFICADO: Oculto por defecto (opacity: 0) y sin interactividad (pointer-events: none) */
         .btn-borrar-foto {
             position: absolute;
             top: 8px;
             right: 8px;
-            
-            /* Un color rojo un poco más sólido para que contraste bien sobre cualquier foto */
-            background: rgba(220, 38, 38, 0.9); 
+            background: rgba(220, 38, 38, 0.95); 
             color: white;
             border: none;
             border-radius: 50%;
-            
-            /* Agrandamos un poco el botón (de 28px a 36px) para que sea fácil darle con el dedo */
             width: 36px;
             height: 36px;
-            
             font-size: 1.4rem;
             line-height: 1;
             cursor: pointer;
@@ -81,30 +86,29 @@
             align-items: center;
             justify-content: center;
             z-index: 5;
-            
-            /* 1. CAMBIO CLAVE: Cambiamos 'opacity: 0' a 'opacity: 1' para que sea SIEMPRE visible */
-            opacity: 1; 
-            
-            /* Sombra sutil para que resalte y se note que es un elemento interactivo */
+            opacity: 0; 
+            pointer-events: none;
+            transform: scale(0.7);
+            transition: opacity 0.2s ease, transform 0.2s ease;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-            
-            /* Evita que los toques rápidos en el móvil causen efectos extraños de zoom del navegador */
             touch-action: manipulation; 
         }
 
-        /* La imagen dentro de la miniatura */
+        /* 🔥 NUEVO: Cuando el wrapper tiene la clase 'seleccionada', se muestra el botón */
+        .foto-wrapper.seleccionada .btn-borrar-foto {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
+
+        /* La imagen cambia a 'cover' para que rellene proporcionalmente el cuadrado sin deformar */
         .foto-item { 
             width: 100%; 
             height: 100%; 
             display: block; 
-            /* 2. AJUSTE DE PROPORCIÓN: */
-            /* 'contain' hace que la foto se reescale por completo sin cortarse, */
-            /* mostrando barras negras/oscuras a los lados si la proporción es muy extrema */
-            object-fit: contain; 
+            object-fit: cover; 
         }
         
-        /* ... tus estilos de botones ... */
-
         /* Estilos para el Modal de Zoom (<dialog>) */
         #zoom-modal { 
             border: none; 
@@ -125,13 +129,10 @@
             align-items: center; 
         }
         
-        /* 3. EL ZOOM PERFECTO PARA CUALQUIER PANTALLA: */
         #zoom-img { 
             max-width: 100%; 
-            /* Forzamos a que la imagen abierta NUNCA mida más del 80% de la altura de la pantalla */
             max-height: 80vh; 
             border-radius: 8px; 
-            /* Mantiene las proporciones exactas (ancho/alto) de la foto original */
             object-fit: contain; 
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
         }
@@ -146,10 +147,9 @@
             cursor: pointer; 
         }
 
-        /* Estilos base para los modales compartidos */
         dialog {
             border: 1px solid #374151;
-            background: #111827; /* Fondo gris oscuro */
+            background: #111827; 
             color: white;
             border-radius: 12px;
             padding: 1.5rem;
@@ -164,178 +164,34 @@
             backdrop-filter: blur(4px);
         }
 
-        /* Reutilizamos las clases que ya tenías para el contenedor */
-        .modal-contenedor h3 {
-            margin-top: 0;
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-        }
+        .modal-contenedor h3 { margin-top: 0; font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .modal-contenedor p { color: #9ca3af; font-size: 0.9rem; line-height: 1.4; margin-bottom: 1.5rem; margin-top: 0; }
+        .modal-acciones { display: flex; gap: 1rem; }
 
-        .modal-contenedor p {
-            color: #9ca3af;
-            font-size: 0.9rem;
-            line-height: 1.4;
-            margin-bottom: 1.5rem;
-            margin-top: 0;
-        }
-
-        .modal-acciones {
-            display: flex;
-            gap: 1rem;
-        }
-
-        /* Y los estilos de botones que ya funcionaban */
-        .btn-modal-cancelar {
-            flex: 1;
-            background: #4b5563;
-            color: white;
-            border: none;
-            padding: 0.75rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-
-        .btn-modal-eliminar {
-            flex: 1;
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 0.75rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-
-        .btn-modal-primario {
-            flex: 1;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 0.75rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
+        .btn-modal-cancelar { flex: 1; background: #4b5563; color: white; border: none; padding: 0.75rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+        .btn-modal-eliminar { flex: 1; background: #ef4444; color: white; border: none; padding: 0.75rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+        .btn-modal-primario { flex: 1; background: #3b82f6; color: white; border: none; padding: 0.75rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
         
         .btn-volver { background: #3b82f6; width: 100%; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 1.5rem; height: 40px; }
         .btn-eliminar { background: #ef4444; width: 100%; color: white; margin-top: 1rem; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; float: right; height: 40px; }
 
-        .app-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 65px;
-            /* 4. FOOTER: A juego con el nav, cierra el marco de la app */
-            background: #111827; 
-            border-top: 1px solid #1f2937;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 10;
-        }
+        .app-footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: #111827; border-top: 1px solid #1f2937; display: flex; justify-content: space-around; align-items: center; z-index: 10; }
+        .footer-avatar-img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1.5px solid #6b7280; transition: border-color 0.2s ease, transform 0.2s ease; }
+        .footer-link { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #6b7280; font-size: 0.75rem; font-weight: 600; transition: color 0.2s ease; gap: 4px; }
+        .footer-icon { width: 24px; height: 24px; stroke: #6b7280; transition: stroke 0.2s ease, transform 0.2s ease; }
 
-        .footer-avatar-img {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%; /* La hace completamente redonda */
-            object-fit: cover;  /* Evita que la foto se deforme si no es perfectamente cuadrada */
-            border: 1.5px solid #6b7280; /* Borde gris por defecto que combina con el texto */
-            transition: border-color 0.2s ease, transform 0.2s ease;
-        }
+        .footer-link.active .footer-avatar-img { border-color: #3b82f6; transform: scale(1.05); }
+        .footer-link.active .footer-icon { stroke: #3b82f6; transform: scale(1.05); }
 
-        .footer-link {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: #6b7280; /* Iconos apagados por defecto */
-            font-size: 0.75rem;
-            font-weight: 600;
-            transition: color 0.2s ease;
-            gap: 4px;
-        }
+        .app-nav { height: 60px; background-color: #111827; display: flex; justify-content: space-between; align-items: center; padding: 0 1.5rem; color: white; border-bottom: 1px solid #1f2937; }
+        .app-nav .logo { font-weight: bold; font-size: 1.3rem; letter-spacing: 0.5px; color: #3b82f6; }
+        .user-info { display: flex; align-items: center; gap: 0.75rem; }
+        .nav-avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid #3b82f6; }
+        .nav-username { color: #f3f4f6; font-weight: 500; }
+        #nav-username { font-style: italic; }
 
-        .footer-icon {
-            width: 24px;
-            height: 24px;
-            stroke: #6b7280;
-            transition: stroke 0.2s ease, transform 0.2s ease;
-        }
-
-        /* Cuando la pestaña está activa o pasas el cursor */
-        .footer-link.active .footer-avatar-img {
-            border-color: #3b82f6; /* Cambia el borde a azul eléctrico */
-            transform: scale(1.05); /* Efecto de aumento sutil */
-        }
-
-        .footer-link.active .footer-icon {
-            stroke: #3b82f6;
-            transform: scale(1.05);
-        }
-
-        .app-nav {
-            height: 60px;
-            background-color: #111827; 
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 1.5rem;
-            color: white;
-            border-bottom: 1px solid #1f2937; /* Línea divisoria muy fina */
-        }
-
-        .app-nav .logo {
-            font-weight: bold;
-            font-size: 1.3rem;
-            letter-spacing: 0.5px;
-            color: #3b82f6; 
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .nav-avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #3b82f6;
-        }
-
-        .nav-username {
-            color: #f3f4f6;
-            font-weight: 500;
-        }
-
-        #nav-username {
-            font-style: italic;
-        }
-
-        .hr-divider {
-            border: 0;
-            border-top: 1px solid #374151;
-            margin: 1.5rem 0;
-        }
-
-        .input-text-dark {
-            width: 100%;
-            padding: 0.75rem;
-            margin: 1rem 0;
-            background: #111827;
-            color: white;
-            border: 1px solid #4b5563;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 0.9rem;
-        }
+        .hr-divider { border: 0; border-top: 1px solid #374151; margin: 1.5rem 0; }
+        .input-text-dark { width: 100%; padding: 0.75rem; margin: 1rem 0; background: #111827; color: white; border: 1px solid #4b5563; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -378,7 +234,7 @@
                 <div style="display: flex; gap: 0.5rem;">
                     <select id="select-add-miembro" style="flex: 1; width: 10rem; padding: 0.5rem; border-radius: 6px; border: 1px solid #4b5563; background: #111827; color: white;">
                         <option value="" disabled selected>Cargando usuarios disponibles...</option>
-                    } </select>
+                    </select>
                     <button id="btn-add-miembro" style="background: #2563eb; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">Añadir</button>
                 </div>
             </div>

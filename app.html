@@ -5,7 +5,7 @@
     <title>VoyageGroup - Mis Grupos</title>
     <link rel="stylesheet" href="styles/styles.css">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Mi Cuadrilla">
@@ -65,6 +65,24 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Parche definitivo para congelamientos de renderizado en iOS PWA
+        if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    // Simula un micro-scroll imperceptible y dispara el evento resize
+                    window.scrollTo(0, 1);
+                    window.dispatchEvent(new Event('resize'));
+                    
+                    // Forzar un rediseño de las capas críticas de CSS
+                    document.body.style.display = 'none';
+                    document.body.offsetHeight; // Truco técnico: fuerza el reflow del navegador
+                    document.body.style.display = 'flex'; 
+                }, 150); // 150ms es el tiempo ideal para que Safari se asiente tras la recarga
+            });
+        }
+    </script>
 
     <script type="module" src="js/app.js"></script>
 </body>

@@ -319,7 +319,7 @@ async function cargarFotosDelViaje() {
         // Apuntamos a la subcolección 'fotos' dentro del viaje activo
         const fotosSubcoleccionRef = collection(db, "viajes", viajeId, "fotos");
         
-        // Traemos los documentos (puedes añadir un query con orderBy si guardas timestamp)
+        // Traemos los documentos
         const querySnapshot = await getDocs(fotosSubcoleccionRef);
 
         if (!querySnapshot.empty) {
@@ -336,32 +336,67 @@ async function cargarFotosDelViaje() {
                 imgElement.classList.add("foto-item");
                 imgElement.alt = "Foto de la cuadrilla";
 
-                imgElement.addEventListener("click", () => {
-                    zoomImg.src = fotoBase64;
-                    zoomModal.showModal();
-                });
-
                 const btnBorrarFoto = document.createElement("button");
                 btnBorrarFoto.innerHTML = "&times;"; 
                 btnBorrarFoto.classList.add("btn-borrar-foto"); 
                 btnBorrarFoto.title = "Eliminar foto permanentemente";
+
+                // 🌟 NUEVA LÓGICA DE CONTROL DE CLIC EN EL WRAPPER (TARJETA)
+                wrapper.addEventListener("click", (e) => {
+                    // Si se clica específicamente en el botón de borrar, no hacemos nada más aquí
+                    if (e.target.classList.contains("btn-borrar-foto")) {
+                        return;
+                    }
+
+                    // 1. Si la foto NO está seleccionada, la seleccionamos y mostramos la "X"
+                    if (!wrapper.classList.contains("seleccionada")) {
+                        // Limpiamos cualquier otra foto que estuviera seleccionada previamente
+                        document.querySelectorAll(".foto-wrapper.seleccionada").forEach(w => {
+                            w.classList.remove("seleccionada");
+                        });
+                        // Activamos esta foto
+                        wrapper.classList.add("seleccionada");
+                    } 
+                    // 2. Si YA estaba seleccionada y vuelven a clicar, se abre el Zoom
+                    else {
+                        wrapper.classList.remove("seleccionada"); // Limpiamos el estado
+                        zoomImg.src = fotoBase64;
+                        zoomModal.showModal();
+                    }
+                });
                 
+                // Mantenemos tu lógica original para el botón de borrar
                 btnBorrarFoto.addEventListener("click", (e) => {
-                    e.stopPropagation(); 
-                    // 💥 CAMBIO: Ahora guardamos el ID del documento de la foto para borrarlo
+                    e.stopPropagation(); // Evitamos que el clic se propague al wrapper
                     fotoSeleccionadaParaBorrar = fotoDocId; 
                     fotoModal.showModal();
                 });
 
+                // Construimos la estructura
                 wrapper.appendChild(imgElement);
                 wrapper.appendChild(btnBorrarFoto); 
                 galeriaFotos.appendChild(wrapper);
             });
+
+            // 🌟 TRUCO EXTRA: Si el usuario toca fuera de cualquier foto, quitamos la "X" activa
+            // Eliminamos cualquier listener previo similar para no duplicar eventos
+            document.removeEventListener("click", quitarSeleccionFotosGlobal);
+            document.addEventListener("click", quitarSeleccionFotosGlobal);
+
         } else {
             galeriaFotos.innerHTML = `<p style="color: #6b7280; font-style: italic;">No se han añadido fotos para este viaje todavía.</p>`;
         }
     } catch (error) {
         console.error("Error al cargar el álbum de fotos desde la subcolección:", error);
+    }
+}
+
+// Función auxiliar para limpiar selecciones al tocar fuera (añádela en tu archivo js)
+function quitarSeleccionFotosGlobal(e) {
+    if (!e.target.closest(".foto-wrapper")) {
+        document.querySelectorAll(".foto-wrapper.seleccionada").forEach(w => {
+            w.classList.remove("seleccionada");
+        });
     }
 }
 
