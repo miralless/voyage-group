@@ -104,15 +104,19 @@ async function cargarPerfilUsuario(uid) {
             profileUsername.textContent = `@${userData.username}`;
             profileEmail.textContent = userData.email;
 
+            // 1. Contabilizar grupos
             const totalGrupos = userData.grupos ? userData.grupos.length : 0;
             statGroupsCount.textContent = totalGrupos; 
-            statPinsCount.textContent = "0";
+
+            // 2. 🔥 NUEVO: Contabilizar viajes desde el array del usuario
+            const totalViajes = userData.viajes ? userData.viajes.length : 0;
+            statPinsCount.textContent = totalViajes;
 
         } else {
-            console.error("No se encontró el documento del usuario."); // Conservado
+            console.error("No se encontró el documento del usuario.");
         }
     } catch (error) {
-        console.error("Error al obtener el perfil:", error); // Conservado
+        console.error("Error al obtener el perfil:", error);
     }
 }
 

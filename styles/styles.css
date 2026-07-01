@@ -241,7 +241,7 @@ button:active {
 /* Nav Superior */
 .app-nav {
     width: 100%;
-    height: 60px;
+    height: 80px;
     background-color: #111827; 
     display: flex;
     justify-content: space-between;
@@ -398,7 +398,7 @@ button:active {
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 65px;
+    height: 80px;
     /* 4. FOOTER: A juego con el nav, cierra el marco de la app */
     background: #111827; 
     border-top: 1px solid #1f2937;
@@ -409,8 +409,8 @@ button:active {
 }
 
 .footer-avatar-img {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%; /* La hace completamente redonda */
     object-fit: cover;  /* Evita que la foto se deforme si no es perfectamente cuadrada */
     border: 1.5px solid #6b7280; /* Borde gris por defecto que combina con el texto */
@@ -430,8 +430,8 @@ button:active {
 }
 
 .footer-icon {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     stroke: #6b7280;
     transition: stroke 0.2s ease, transform 0.2s ease;
 }
@@ -812,7 +812,7 @@ main.group-layout {
 /* 2. Sección del mapa de logros */
 .map-achievements-container {
     width: 100%;
-    height: 13.5rem;
+    height: 17.5rem;
     background: #1f2937;
     border: 1px solid #374151;
     border-radius: 16px;
@@ -1094,7 +1094,7 @@ main.group-layout {
 
 .app-nav {
     width: 100% !important;
-    height: 60px !important;
+    height: 80px !important;
     flex-shrink: 0 !important;
     box-sizing: border-box !important;
 }

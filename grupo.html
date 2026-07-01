@@ -48,7 +48,7 @@
 
                 <button id="btn-open-trip-modal" class="btn-add-trip" style="width: 100%; height: 40px; margin-top: 0.5rem;">Agregar Nuevo Viaje</button>
                 
-                <button id="btn-abandonar-grupo" style="background: #ef4444; height: 40px; border: 1px solid #ef4444; color: white; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; margin-top:-5rem; margin-bottom: 1.5rem; transition: background 0.2s;">
+                <button id="btn-abandonar-grupo" style="background: #ef4444; height: 40px; border: 1px solid #ef4444; color: white; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; margin-top:-5rem; margin-bottom: 2.75rem; transition: background 0.2s;">
                     Abandonar Grupo
                 </button>
             </div>
@@ -113,6 +113,16 @@
         <div class="dialog-actions">
             <button class="dialog-btn dialog-btn-secondary" id="btn-close-trip-modal">Cancelar</button>
             <button class="dialog-btn dialog-btn-primary" id="btn-submit-trip">Crear Viaje</button>
+        </div>
+    </dialog>
+
+    <dialog id="leave-group-modal" class="custom-dialog">
+        <h3 style="color: white; margin-bottom: 0.5rem; font-size: 1.2rem;">¿Abandonar grupo?</h3>
+        <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 1.5rem;">Estás a punto de salir de este grupo de viaje. Esta acción no se puede deshacer y perderás el acceso a sus viajes.</p>
+        
+        <div class="dialog-actions" style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <button id="btn-cancel-leave" class="dialog-btn dialog-btn-secondary" type="button" style="margin: 0;">Cancelar</button>
+            <button id="btn-confirm-leave" class="dialog-btn dialog-btn-primary" type="button" style="margin: 0; background-color: #ef4444; border-color: #ef4444;">Sí, abandonar</button>
         </div>
     </dialog>
 

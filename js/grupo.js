@@ -2,7 +2,7 @@
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
-    doc, getDoc, collection, addDoc, query, setDoc, where, getDocs 
+    doc, getDoc, collection, addDoc, query, setDoc, where, getDocs, arrayRemove, arrayUnion, updateDoc 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { mostrarAlerta } from "./dialogs.js";
 
@@ -504,6 +504,75 @@ inputTripCity.addEventListener("blur", async () => {
     }
 });
 
+const leaveGroupModal = document.getElementById("leave-group-modal");
+const btnAbandonar = document.getElementById("btn-abandonar-grupo"); 
+const btnCancelLeave = document.getElementById("btn-cancel-leave");
+const btnConfirmLeave = document.getElementById("btn-confirm-leave");
+
+if (btnAbandonar) {
+    btnAbandonar.addEventListener("click", (e) => {
+        e.preventDefault(); // 🔥 Evita que el botón rompa el hilo visual
+        if (grupoActivoId) {
+            leaveGroupModal.showModal();
+        }
+    });
+}
+
+if (btnCancelLeave) {
+    btnCancelLeave.addEventListener("click", (e) => {
+        e.preventDefault(); // 🔥 Evita acciones fantasmas
+        leaveGroupModal.close();
+    });
+}
+
+if (btnConfirmLeave) {
+    btnConfirmLeave.addEventListener("click", abandonarGrupoConfirmado);
+}
+
+// Función que realiza el borrado real en Firebase
+async function abandonarGrupoConfirmado() {
+    if (!currentUserId || !grupoActivoId) return;
+
+    try {
+        // Cerramos el diálogo de confirmación inmediatamente
+        leaveGroupModal.close();
+        
+        // Mostramos tu loader global de carga de la app
+        appLoader.classList.remove("hidden");
+
+        // Referencias a los documentos de Firestore
+        const grupoRef = doc(db, "grupos", grupoActivoId);
+        const usuarioRef = doc(db, "usuarios", currentUserId);
+
+        // Eliminación cruzada atómica usando arrayRemove
+        await updateDoc(grupoRef, {
+            participantes: arrayRemove(currentUserId)
+        });
+
+        await updateDoc(usuarioRef, {
+            grupos: arrayRemove(grupoActivoId)
+        });
+
+        // Limpieza de datos locales
+        localStorage.removeItem("grupoActivoId");
+        localStorage.removeItem("viajeActivoId");
+        localStorage.removeItem("viajeActivoCiudad");
+
+        appLoader.classList.add("hidden");
+
+        // Puedes usar tu función personalizada mostrarAlerta si lo prefieres aquí
+        await mostrarAlerta("Has abandonado el grupo correctamente.");
+        
+        // Redirección
+        window.location.href = "app.html";
+
+    } catch (error) {
+        appLoader.classList.add("hidden");
+        console.error("Error crítico al intentar abandonar el grupo:", error);
+        await mostrarAlerta("No se ha podido procesar tu salida del grupo. Inténtalo de nuevo.");
+    }
+}
+
 // Función interna para fijar la ciudad elegida en la interfaz
 function marcarCiudadComoSeleccionada(lugar) {
     destinoSeleccionadoGps = lugar; // Guardamos el objeto entero (con lat/lon) en la variable global
@@ -588,6 +657,16 @@ btnSubmitTrip.addEventListener("click", async (e) => {
         // 3. Guardamos el viaje y obtenemos la referencia del documento generado
         const viajeDocRef = await addDoc(collection(db, "viajes"), nuevoViaje);
         const nuevoViajeId = viajeDocRef.id; // Este es el ID único del viaje
+
+        btnSubmitTrip.textContent = "Sincronizando perfiles...";
+        
+        // Recorremos los IDs de los usuarios que han ido a este viaje
+        for (const participanteId of participantesViaje) {
+            const usuarioRef = doc(db, "usuarios", participanteId);
+            await updateDoc(usuarioRef, {
+                viajes: arrayUnion(nuevoViajeId) // Añade el ID del viaje a su array sin duplicar
+            });
+        }
 
         // 4. 🔥 CORREGIDO: Guardamos las fotos de manera individual en la subcolección interna
         if (arrayFotosBase64.length > 0) {
